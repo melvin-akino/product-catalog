@@ -28,18 +28,10 @@ services:
       dockerfile: Dockerfile
     container_name: eon_backend
     restart: unless-stopped
-    environment:
-      PORT: 3000
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: root
-      DB_PASSWORD: ${DB_PASSWORD:-eon_secret}
-      DB_NAME: ${DB_NAME:-product_catalog}
-      JWT_SECRET: ${JWT_SECRET:-eon_jwt_super_secret_change_in_prod}
-      JWT_EXPIRES_IN: 24h
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
+    # .env.backend is mounted as a volume so Node's dotenv reads it directly —
+    # zero interpolation by Docker Compose, so bcrypt $ signs are preserved.
     volumes:
+      - ./.env.backend:/app/.env:ro
       - uploads_data:/app/uploads
     depends_on:
       mysql:
