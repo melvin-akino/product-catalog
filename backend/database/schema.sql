@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS company_info (
   email VARCHAR(150),
   tagline VARCHAR(500),
   logo_url VARCHAR(500),
+  logo_upload VARCHAR(500),
+  logo_source ENUM('url','upload') NOT NULL DEFAULT 'url',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 

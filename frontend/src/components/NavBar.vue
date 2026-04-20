@@ -2,8 +2,17 @@
   <nav class="navbar" :class="{ scrolled: isScrolled, 'menu-open': menuOpen }">
     <div class="container nav-inner">
       <RouterLink to="/" class="nav-logo">
-        <span class="logo-icon">⚡</span>
-        <span class="logo-text">EON<span class="text-green">Marketing</span></span>
+        <img
+          v-if="logoSrc"
+          :src="logoSrc"
+          :alt="companyName"
+          class="logo-img"
+          @error="logoSrc = ''"
+        />
+        <template v-else>
+          <span class="logo-icon">⚡</span>
+          <span class="logo-text">EON<span class="text-green">Marketing</span></span>
+        </template>
       </RouterLink>
 
       <ul class="nav-links" :class="{ open: menuOpen }">
@@ -26,12 +35,21 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink } from 'vue-router';
+import { companyApi } from '@/api/index';
 
 const isScrolled = ref(false);
 const menuOpen = ref(false);
+const logoSrc = ref('');
+const companyName = ref('EON Marketing');
 
 function onScroll() { isScrolled.value = window.scrollY > 40; }
-onMounted(() => window.addEventListener('scroll', onScroll));
+onMounted(() => {
+  window.addEventListener('scroll', onScroll);
+  companyApi.get().then(({ data }) => {
+    if (data.logo_active) logoSrc.value = data.logo_active;
+    if (data.name) companyName.value = data.name;
+  }).catch(() => {});
+});
 onUnmounted(() => window.removeEventListener('scroll', onScroll));
 </script>
 
@@ -56,6 +74,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll));
   display: flex; align-items: center; gap: 0.5rem;
   font-size: 1.3rem; font-weight: 800; color: var(--text-primary);
   text-decoration: none;
+}
+.logo-img {
+  height: 42px; max-width: 160px;
+  object-fit: contain;
+  /* Slight brightness boost so dark logos show on dark navbar */
+  filter: brightness(1.05);
 }
 .logo-icon { font-size: 1.5rem; }
 .nav-links {
@@ -86,5 +110,6 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll));
   .nav-links.open { display: flex; }
   .nav-links li { width: 100%; }
   .nav-links a { display: block; width: 100%; padding: 0.75rem 1rem; }
+  .logo-img { height: 34px; }
 }
 </style>
