@@ -2,6 +2,15 @@
 
 A full-stack equipment and lighting product catalog with a black & green theme.
 
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/ARCHITECTURE.md) | System design, stack, DB schema, data flow |
+| [API Reference](docs/API_REFERENCE.md) | All endpoints with request/response examples |
+| [Admin Guide](docs/ADMIN_GUIDE.md) | How to use the admin panel |
+| [Testing Guide](docs/TESTING.md) | Running tests, writing new tests, coverage |
+
 ## Stack
 - **Frontend**: Vue 3 + Vite + Pinia + Vue Router
 - **Backend**: Node.js + Express
@@ -100,6 +109,24 @@ npm run dev
 - Company info editor
 - Social media link manager
 - SEO meta tags per page + sitemap generator
+
+---
+
+## Running Tests
+
+```bash
+# Run all 83 API tests (no Docker needed)
+bash run-tests.sh
+
+# With coverage report
+bash run-tests.sh --coverage
+
+# Single file
+bash run-tests.sh auth
+bash run-tests.sh products
+```
+
+See [docs/TESTING.md](docs/TESTING.md) for full details.
 
 ---
 

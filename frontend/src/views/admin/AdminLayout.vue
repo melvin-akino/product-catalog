@@ -35,9 +35,12 @@
           <h2 class="page-title">{{ currentTitle }}</h2>
         </div>
         <div class="topbar-right">
+          <button class="help-btn" @click="helpOpen = true" title="Help" aria-label="Open help">?</button>
           <span class="admin-badge badge badge-green">Admin</span>
         </div>
       </header>
+
+      <HelpPanel :open="helpOpen" :page="route.name" @close="helpOpen = false" />
       <main class="admin-content">
         <RouterView />
       </main>
@@ -49,11 +52,13 @@
 import { ref, computed } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import HelpPanel from '@/components/admin/HelpPanel.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 const sidebarCollapsed = ref(false);
+const helpOpen = ref(false);
 
 const navItems = [
   { to: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
@@ -124,8 +129,16 @@ function doLogout() {
   padding: 0 1.5rem; position: sticky; top: 0; z-index: 50;
 }
 .topbar-left { display: flex; align-items: center; gap: 1rem; }
+.topbar-right { display: flex; align-items: center; gap: 0.75rem; }
 .page-title { font-size: 1.1rem; font-weight: 700; }
 .mobile-menu-btn { display: none; background: none; color: var(--text-primary); font-size: 1.2rem; }
+.help-btn {
+  width: 2rem; height: 2rem; border-radius: 50%;
+  background: var(--green-glow); border: 1px solid var(--green-border);
+  color: var(--green-primary); font-weight: 800; font-size: 1rem;
+  cursor: pointer; transition: all 0.2s;
+}
+.help-btn:hover { background: var(--green-primary); color: #000; }
 .admin-content { flex: 1; padding: 2rem 1.5rem; }
 
 @media (max-width: 768px) {
