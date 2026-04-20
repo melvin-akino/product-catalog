@@ -9,7 +9,47 @@ A full-stack equipment and lighting product catalog with a black & green theme.
 
 ---
 
-## Quick Start
+## 🐳 Docker Quick Start (Recommended)
+
+### One command — that's it
+
+```bash
+bash setup.sh
+```
+
+The script will:
+1. Check Docker is installed and running
+2. Ask for admin username, password, and app port (or use defaults)
+3. Generate a secure bcrypt password hash automatically
+4. Build all Docker images (backend Node.js + frontend Nginx + MySQL)
+5. Start all services with `docker compose up -d`
+6. Wait for each service to be healthy
+7. Open the site in your browser
+
+**Default credentials** (you can change them when prompted):
+| Setting | Default |
+|---------|---------|
+| Admin username | `admin` |
+| Admin password | `Admin@1234` |
+| App port | `8080` |
+
+**Access URLs after setup:**
+- Store: `http://localhost:8080`
+- Admin: `http://localhost:8080/admin/login`
+- API:   `http://localhost:3000/api/health`
+
+**Useful Docker commands:**
+```bash
+docker compose logs -f           # Stream all logs
+docker compose stop              # Stop without deleting data
+docker compose start             # Restart stopped containers
+bash setup.sh --reset            # Wipe database and start fresh
+bash setup.sh --force            # Change credentials and rebuild
+```
+
+---
+
+## Manual (Non-Docker) Quick Start
 
 ### 1. Database
 ```bash
