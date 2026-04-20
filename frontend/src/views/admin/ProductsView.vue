@@ -21,7 +21,13 @@
         </thead>
         <tbody>
           <tr v-for="p in products" :key="p.product_id">
-            <td><img :src="getThumb(p)" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border);" /></td>
+            <td>
+              <img
+                :src="resolveImage(getThumb(p))"
+                style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border);"
+                @error="e => e.target.src = '/placeholder.svg'"
+              />
+            </td>
             <td><strong>{{ p.name }}</strong></td>
             <td>{{ p.category_name || '—' }}</td>
             <td><span :class="p.featured ? 'text-green' : 'text-muted'">{{ p.featured ? '★' : '☆' }}</span></td>
@@ -70,11 +76,46 @@
             <label>Description</label>
             <textarea v-model="form.description" rows="3" placeholder="Product description…"></textarea>
           </div>
+
+          <!-- ── Image Manager ─────────────────────────── -->
           <div class="form-group">
-            <label>Images (JSON array of URLs)</label>
-            <textarea v-model="imagesText" rows="2" placeholder='["https://…", "https://…"]'></textarea>
-            <small class="text-muted">Enter a JSON array of image URLs</small>
+            <label>Product Images</label>
+
+            <!-- Current images -->
+            <div v-if="imageList.length" class="image-grid">
+              <div v-for="(img, idx) in imageList" :key="idx" class="image-thumb-wrap">
+                <img :src="resolveImage(img)" class="image-thumb" @error="e => e.target.src = '/placeholder.svg'" />
+                <button class="image-remove" @click="removeImage(idx)" title="Remove">✕</button>
+                <span v-if="idx === 0" class="image-primary-badge">Main</span>
+              </div>
+            </div>
+            <p v-else class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem;">No images yet</p>
+
+            <!-- Upload files -->
+            <div
+              class="upload-zone"
+              :class="{ dragging: isDragging }"
+              @dragover.prevent="isDragging = true"
+              @dragleave="isDragging = false"
+              @drop.prevent="onDrop"
+              @click="$refs.fileInput.click()"
+            >
+              <input ref="fileInput" type="file" accept="image/*" multiple hidden @change="onFilePick" />
+              <span v-if="uploading" class="upload-text">Uploading…</span>
+              <span v-else class="upload-text">
+                <strong>Click to browse</strong> or drag &amp; drop images here
+                <em>(JPG, PNG, WebP — max 5 MB each)</em>
+              </span>
+            </div>
+
+            <!-- Add by URL -->
+            <div class="url-add-row">
+              <input v-model="urlInput" placeholder="Or paste an image URL…" @keydown.enter.prevent="addUrl" />
+              <button class="btn-outline btn-sm" @click="addUrl" :disabled="!urlInput.trim()">Add URL</button>
+            </div>
           </div>
+          <!-- ── / Image Manager ────────────────────────── -->
+
           <div class="form-group">
             <label>Specifications (JSON object)</label>
             <textarea v-model="specsText" rows="4" placeholder='{"Power": "500W", "Voltage": "220V"}'></textarea>
@@ -97,7 +138,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { productsApi, categoriesApi } from '@/api/index';
+import { productsApi, categoriesApi, uploadApi } from '@/api/index';
 
 const products = ref([]);
 const categories = ref([]);
@@ -109,18 +150,62 @@ const editingId = ref(null);
 const saving = ref(false);
 const saveSuccess = ref(false);
 const saveError = ref('');
-const imagesText = ref('[]');
 const specsText = ref('{}');
 
+// Image manager state
+const imageList = ref([]);   // array of URL strings (absolute or /uploads/…)
+const urlInput = ref('');
+const isDragging = ref(false);
+const uploading = ref(false);
+const fileInput = ref(null);
+
 const form = ref({ name: '', description: '', category_id: '', status: 'active', featured: false });
+
+// ── helpers ──────────────────────────────────────────
+function resolveImage(src) {
+  if (!src) return '/placeholder.svg';
+  // Already absolute URL — use as-is
+  if (src.startsWith('http://') || src.startsWith('https://')) return src;
+  // Relative path (e.g. /uploads/file.jpg) — prepend origin
+  return src;
+}
 
 function getThumb(p) {
   try {
     const imgs = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
-    return imgs?.[0] || '/placeholder.svg';
-  } catch { return '/placeholder.svg'; }
+    return imgs?.[0] || null;
+  } catch { return null; }
 }
 
+function removeImage(idx) { imageList.value.splice(idx, 1); }
+
+function addUrl() {
+  const url = urlInput.value.trim();
+  if (!url) return;
+  if (!imageList.value.includes(url)) imageList.value.push(url);
+  urlInput.value = '';
+}
+
+async function uploadFiles(files) {
+  if (!files.length) return;
+  uploading.value = true;
+  saveError.value = '';
+  try {
+    const { data } = await uploadApi.uploadImages(Array.from(files));
+    imageList.value.push(...data.urls);
+  } catch (e) {
+    saveError.value = e.response?.data?.error || 'Upload failed. Check file size and format.';
+  }
+  uploading.value = false;
+}
+
+function onFilePick(e) { uploadFiles(e.target.files); e.target.value = ''; }
+function onDrop(e) {
+  isDragging.value = false;
+  uploadFiles(e.dataTransfer.files);
+}
+
+// ── data ─────────────────────────────────────────────
 async function loadProducts() {
   const params = { limit: 50 };
   if (search.value) params.search = search.value;
@@ -134,15 +219,18 @@ async function loadProducts() {
 function openModal(p = null) {
   saveSuccess.value = false;
   saveError.value = '';
+  urlInput.value = '';
+  isDragging.value = false;
   if (p) {
     editingId.value = p.product_id;
     form.value = { name: p.name, description: p.description || '', category_id: p.category_id || '', status: p.status, featured: !!p.featured };
-    imagesText.value = typeof p.images === 'string' ? p.images : JSON.stringify(p.images || []);
+    const imgs = typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []);
+    imageList.value = Array.isArray(imgs) ? [...imgs] : [];
     specsText.value = typeof p.specifications === 'string' ? p.specifications : JSON.stringify(p.specifications || {});
   } else {
     editingId.value = null;
     form.value = { name: '', description: '', category_id: '', status: 'active', featured: false };
-    imagesText.value = '[]';
+    imageList.value = [];
     specsText.value = '{}';
   }
   modalOpen.value = true;
@@ -151,13 +239,12 @@ function openModal(p = null) {
 async function saveProduct() {
   saveError.value = '';
   if (!form.value.name.trim()) { saveError.value = 'Product name is required.'; return; }
-  let images, specifications;
-  try { images = JSON.parse(imagesText.value); } catch { saveError.value = 'Images must be valid JSON array.'; return; }
+  let specifications;
   try { specifications = JSON.parse(specsText.value); } catch { saveError.value = 'Specifications must be valid JSON object.'; return; }
 
   saving.value = true;
   try {
-    const payload = { ...form.value, images, specifications };
+    const payload = { ...form.value, images: imageList.value, specifications };
     if (editingId.value) {
       await productsApi.update(editingId.value, payload);
     } else {
@@ -189,8 +276,60 @@ onMounted(async () => {
 .filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
 .actions-cell { display: flex; gap: 0.4rem; }
 .badge-muted { background: rgba(102,102,102,0.15); color: var(--text-muted); border: 1px solid var(--border); }
-.product-modal { max-width: 640px; max-height: 90vh; overflow-y: auto; }
+.product-modal { max-width: 660px; max-height: 90vh; overflow-y: auto; }
 .product-modal h3 { margin-bottom: 0.25rem; }
 .modal-form { margin-top: 0.75rem; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* Image manager */
+.image-grid {
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.image-thumb-wrap {
+  position: relative; width: 80px; height: 80px; flex-shrink: 0;
+}
+.image-thumb {
+  width: 100%; height: 100%; object-fit: cover;
+  border-radius: var(--radius); border: 1px solid var(--border);
+}
+.image-remove {
+  position: absolute; top: -6px; right: -6px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #ef5350; color: #fff; font-size: 0.65rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: 2px solid var(--bg-secondary);
+  line-height: 1;
+}
+.image-primary-badge {
+  position: absolute; bottom: 2px; left: 2px;
+  font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
+  background: var(--green-primary); color: #000;
+  padding: 1px 4px; border-radius: 3px;
+}
+
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 0.6rem;
+}
+.upload-zone:hover, .upload-zone.dragging {
+  border-color: var(--green-primary);
+  background: var(--green-glow);
+}
+.upload-text {
+  font-size: 0.85rem; color: var(--text-secondary);
+  display: flex; flex-direction: column; gap: 0.25rem; align-items: center;
+}
+.upload-text strong { color: var(--green-primary); }
+.upload-text em { color: var(--text-muted); font-style: normal; font-size: 0.78rem; }
+
+.url-add-row {
+  display: flex; gap: 0.5rem;
+}
+.url-add-row input { flex: 1; }
 </style>

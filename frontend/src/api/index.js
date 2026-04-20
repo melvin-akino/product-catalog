@@ -71,3 +71,11 @@ export const authApi = {
   login: (data) => api.post('/auth/login', data),
   verify: () => api.post('/auth/verify'),
 };
+
+export const uploadApi = {
+  uploadImages: (files) => {
+    const form = new FormData();
+    files.forEach(f => form.append('images', f));
+    return api.post('/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+};

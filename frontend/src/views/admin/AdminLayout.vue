@@ -17,6 +17,10 @@
       </nav>
 
       <div class="sidebar-footer">
+        <button class="nav-item help-nav-btn" @click="helpOpen = true" title="Help">
+          <span class="nav-icon">❓</span>
+          <span v-if="!sidebarCollapsed" class="nav-label">Help</span>
+        </button>
         <RouterLink to="/" class="nav-item" title="View Site" target="_blank">
           <span class="nav-icon">🌐</span>
           <span v-if="!sidebarCollapsed" class="nav-label">View Site</span>
@@ -117,6 +121,8 @@ function doLogout() {
 .nav-item.router-link-active { background: var(--green-glow); color: var(--green-primary); border: 1px solid var(--green-border); }
 .nav-icon { font-size: 1.1rem; flex-shrink: 0; }
 .sidebar-footer { padding: 0.75rem 0.5rem; border-top: 1px solid var(--border); }
+.help-nav-btn { color: var(--green-secondary); }
+.help-nav-btn:hover { color: var(--green-primary); background: var(--green-glow); }
 .logout-btn { color: var(--text-muted); }
 .logout-btn:hover { color: #ef5350; background: rgba(239,83,80,0.1); }
 
