@@ -21,7 +21,7 @@
         <li><RouterLink to="/about" @click="menuOpen=false">About</RouterLink></li>
         <li><RouterLink to="/contact" @click="menuOpen=false">Contact</RouterLink></li>
         <li>
-          <RouterLink to="/catalog" class="btn-primary btn-sm" @click="menuOpen=false">View Catalog</RouterLink>
+          <RouterLink to="/catalog" class="btn-primary btn-sm" active-class="" exact-active-class="" @click="menuOpen=false">View Catalog</RouterLink>
         </li>
       </ul>
 
