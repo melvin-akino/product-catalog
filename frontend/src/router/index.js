@@ -25,6 +25,7 @@ const routes = [
       { path: 'content', name: 'admin-content', component: () => import('@/views/admin/ContentEditorView.vue') },
       { path: 'company', name: 'admin-company', component: () => import('@/views/admin/CompanyInfoView.vue') },
       { path: 'social', name: 'admin-social', component: () => import('@/views/admin/SocialLinksView.vue') },
+      { path: 'users', name: 'admin-users', component: () => import('@/views/admin/UsersView.vue') },
       { path: 'seo', name: 'admin-seo', component: () => import('@/views/admin/SEOManagerView.vue') },
     ],
   },

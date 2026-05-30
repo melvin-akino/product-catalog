@@ -20,7 +20,7 @@
   --shadow: 0 4px 24px rgba(0,0,0,0.5);
   --shadow-green: 0 0 24px rgba(0, 230, 118, 0.2);
   --transition: 0.25s ease;
-  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 html { scroll-behavior: smooth; }

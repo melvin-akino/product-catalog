@@ -3,30 +3,33 @@
     <aside class="admin-sidebar" :class="{ collapsed: sidebarCollapsed }">
       <div class="sidebar-header">
         <RouterLink to="/admin/dashboard" class="sidebar-logo">
-          <span>⚡</span>
+          <Zap :size="18" class="logo-zap" />
           <span v-if="!sidebarCollapsed" class="logo-text">EON Admin</span>
         </RouterLink>
-        <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">{{ sidebarCollapsed ? '›' : '‹' }}</button>
+        <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed" :title="sidebarCollapsed ? 'Expand' : 'Collapse'">
+          <ChevronRight v-if="sidebarCollapsed" :size="16" />
+          <ChevronLeft v-else :size="16" />
+        </button>
       </div>
 
       <nav class="sidebar-nav">
         <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="nav-item" :title="item.label">
-          <span class="nav-icon">{{ item.icon }}</span>
+          <component :is="item.icon" :size="17" class="nav-icon" />
           <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
         </RouterLink>
       </nav>
 
       <div class="sidebar-footer">
-        <button class="nav-item help-nav-btn" @click="helpOpen = true" title="Help">
-          <span class="nav-icon">❓</span>
+        <button class="nav-item help-btn" @click="helpOpen = true" title="Help">
+          <HelpCircle :size="17" class="nav-icon" />
           <span v-if="!sidebarCollapsed" class="nav-label">Help</span>
         </button>
         <RouterLink to="/" class="nav-item" title="View Site" target="_blank">
-          <span class="nav-icon">🌐</span>
+          <Globe :size="17" class="nav-icon" />
           <span v-if="!sidebarCollapsed" class="nav-label">View Site</span>
         </RouterLink>
         <button class="nav-item logout-btn" @click="doLogout" title="Logout">
-          <span class="nav-icon">🚪</span>
+          <LogOut :size="17" class="nav-icon" />
           <span v-if="!sidebarCollapsed" class="nav-label">Logout</span>
         </button>
       </div>
@@ -35,12 +38,16 @@
     <div class="admin-main">
       <header class="admin-topbar">
         <div class="topbar-left">
-          <button class="mobile-menu-btn" @click="sidebarCollapsed = !sidebarCollapsed">☰</button>
+          <button class="mobile-menu-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+            <Menu :size="20" />
+          </button>
           <h2 class="page-title">{{ currentTitle }}</h2>
         </div>
         <div class="topbar-right">
-          <button class="help-btn" @click="helpOpen = true" title="Help" aria-label="Open help">?</button>
-          <span class="admin-badge badge badge-green">Admin</span>
+          <button class="help-icon-btn" @click="helpOpen = true" title="Help">
+            <HelpCircle :size="18" />
+          </button>
+          <span class="admin-badge">Admin</span>
         </div>
       </header>
 
@@ -55,6 +62,12 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
+import {
+  Zap, ChevronLeft, ChevronRight, Menu,
+  LayoutDashboard, Package, Tag, FileEdit,
+  Building2, Share2, Search, Users,
+  HelpCircle, Globe, LogOut,
+} from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
 import HelpPanel from '@/components/admin/HelpPanel.vue';
 
@@ -65,23 +78,25 @@ const sidebarCollapsed = ref(false);
 const helpOpen = ref(false);
 
 const navItems = [
-  { to: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
-  { to: '/admin/products', icon: '📦', label: 'Products' },
-  { to: '/admin/categories', icon: '🏷️', label: 'Categories' },
-  { to: '/admin/content', icon: '📝', label: 'Content Editor' },
-  { to: '/admin/company', icon: '🏢', label: 'Company Info' },
-  { to: '/admin/social', icon: '🔗', label: 'Social Links' },
-  { to: '/admin/seo', icon: '🔍', label: 'SEO Manager' },
+  { to: '/admin/dashboard',  icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/admin/products',   icon: Package,          label: 'Products' },
+  { to: '/admin/categories', icon: Tag,              label: 'Categories' },
+  { to: '/admin/users',      icon: Users,            label: 'Users' },
+  { to: '/admin/content',    icon: FileEdit,         label: 'Content Editor' },
+  { to: '/admin/company',    icon: Building2,        label: 'Company Info' },
+  { to: '/admin/social',     icon: Share2,           label: 'Social Links' },
+  { to: '/admin/seo',        icon: Search,           label: 'SEO Manager' },
 ];
 
 const titles = {
-  'admin-dashboard': 'Dashboard',
-  'admin-products': 'Products',
+  'admin-dashboard':  'Dashboard',
+  'admin-products':   'Products',
   'admin-categories': 'Categories',
-  'admin-content': 'Content Editor',
-  'admin-company': 'Company Info',
-  'admin-social': 'Social Links',
-  'admin-seo': 'SEO Manager',
+  'admin-users':      'Users',
+  'admin-content':    'Content Editor',
+  'admin-company':    'Company Info',
+  'admin-social':     'Social Links',
+  'admin-seo':        'SEO Manager',
 };
 const currentTitle = computed(() => titles[route.name] || 'Admin');
 
@@ -93,63 +108,103 @@ function doLogout() {
 
 <style scoped>
 .admin-shell { display: flex; min-height: 100vh; }
+
+/* ── Sidebar ────────────────────────────────────────────────── */
 .admin-sidebar {
-  width: 240px; background: var(--bg-secondary);
+  width: 232px; background: #0d0d0d;
   border-right: 1px solid var(--border);
   display: flex; flex-direction: column;
   position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
   transition: width 0.25s ease;
 }
-.admin-sidebar.collapsed { width: 64px; }
+.admin-sidebar.collapsed { width: 60px; }
+
 .sidebar-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem 0.75rem; border-bottom: 1px solid var(--border); min-height: 64px;
+  padding: 0 0.75rem; border-bottom: 1px solid var(--border);
+  min-height: 60px;
 }
-.sidebar-logo { display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-weight: 800; font-size: 1.05rem; text-decoration: none; }
+.sidebar-logo {
+  display: flex; align-items: center; gap: 0.5rem;
+  color: var(--text-primary); font-weight: 800; font-size: 1rem;
+  text-decoration: none; letter-spacing: -0.02em; overflow: hidden;
+}
+.logo-zap { color: var(--green-primary); flex-shrink: 0; }
 .logo-text { white-space: nowrap; }
-.collapse-btn { background: none; color: var(--text-muted); font-size: 1.2rem; padding: 0.25rem 0.4rem; border-radius: var(--radius); }
-.collapse-btn:hover { color: var(--green-primary); }
-.sidebar-nav { flex: 1; padding: 0.75rem 0.5rem; display: flex; flex-direction: column; gap: 0.15rem; overflow-y: auto; }
-.nav-item {
-  display: flex; align-items: center; gap: 0.75rem;
-  padding: 0.65rem 0.75rem; border-radius: var(--radius);
-  color: var(--text-secondary); font-size: 0.9rem; font-weight: 500;
-  text-decoration: none; background: none; width: 100%; cursor: pointer;
-  transition: all 0.2s; white-space: nowrap;
-}
-.nav-item:hover { background: var(--green-glow); color: var(--green-primary); }
-.nav-item.router-link-active { background: var(--green-glow); color: var(--green-primary); border: 1px solid var(--green-border); }
-.nav-icon { font-size: 1.1rem; flex-shrink: 0; }
-.sidebar-footer { padding: 0.75rem 0.5rem; border-top: 1px solid var(--border); }
-.help-nav-btn { color: var(--green-secondary); }
-.help-nav-btn:hover { color: var(--green-primary); background: var(--green-glow); }
-.logout-btn { color: var(--text-muted); }
-.logout-btn:hover { color: #ef5350; background: rgba(239,83,80,0.1); }
 
-.admin-main { flex: 1; margin-left: 240px; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.25s ease; }
-.admin-sidebar.collapsed ~ .admin-main { margin-left: 64px; }
+.collapse-btn {
+  background: none; color: var(--text-muted);
+  padding: 0.3rem; border-radius: var(--radius);
+  display: flex; align-items: center;
+}
+.collapse-btn:hover { color: var(--green-primary); }
+
+/* ── Nav items ──────────────────────────────────────────────── */
+.sidebar-nav { flex: 1; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.1rem; overflow-y: auto; }
+.nav-item {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.6rem 0.75rem; border-radius: var(--radius);
+  color: var(--text-muted); font-size: 0.875rem; font-weight: 500;
+  text-decoration: none; background: none; width: 100%; cursor: pointer;
+  transition: color 0.2s, background 0.2s; white-space: nowrap;
+  border: 1px solid transparent;
+  position: relative;
+}
+.nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+.nav-item.router-link-active {
+  color: var(--green-primary);
+  background: var(--green-glow);
+  border-color: var(--green-border);
+}
+.nav-item.router-link-active::before {
+  content: ''; position: absolute; left: 0; top: 25%; bottom: 25%;
+  width: 2px; background: var(--green-primary);
+  border-radius: 0 2px 2px 0;
+}
+.nav-icon { flex-shrink: 0; }
+.nav-label { white-space: nowrap; overflow: hidden; }
+
+/* ── Sidebar footer ─────────────────────────────────────────── */
+.sidebar-footer { padding: 0.5rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.1rem; }
+.help-btn { color: var(--text-muted); }
+.help-btn:hover { color: var(--green-primary); background: var(--green-glow); }
+.logout-btn { color: var(--text-muted); }
+.logout-btn:hover { color: #ef5350; background: rgba(239,83,80,0.08); }
+
+/* ── Main ───────────────────────────────────────────────────── */
+.admin-main { flex: 1; margin-left: 232px; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.25s ease; }
+.admin-sidebar.collapsed ~ .admin-main { margin-left: 60px; }
+
 .admin-topbar {
-  height: 64px; background: var(--bg-secondary);
+  height: 60px; background: #0d0d0d;
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 1.5rem; position: sticky; top: 0; z-index: 50;
 }
-.topbar-left { display: flex; align-items: center; gap: 1rem; }
+.topbar-left { display: flex; align-items: center; gap: 0.85rem; }
 .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
-.page-title { font-size: 1.1rem; font-weight: 700; }
-.mobile-menu-btn { display: none; background: none; color: var(--text-primary); font-size: 1.2rem; }
-.help-btn {
-  width: 2rem; height: 2rem; border-radius: 50%;
-  background: var(--green-glow); border: 1px solid var(--green-border);
-  color: var(--green-primary); font-weight: 800; font-size: 1rem;
-  cursor: pointer; transition: all 0.2s;
+.page-title { font-size: 1rem; font-weight: 700; }
+
+.mobile-menu-btn { display: none; background: none; color: var(--text-primary); padding: 0.25rem; }
+.help-icon-btn {
+  background: none; color: var(--text-muted);
+  padding: 0.3rem; border-radius: var(--radius);
+  display: flex; align-items: center; transition: color 0.2s;
 }
-.help-btn:hover { background: var(--green-primary); color: #000; }
-.admin-content { flex: 1; padding: 2rem 1.5rem; }
+.help-icon-btn:hover { color: var(--green-primary); }
+
+.admin-badge {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--green-primary);
+  background: var(--green-glow); border: 1px solid var(--green-border);
+  padding: 0.2rem 0.65rem; border-radius: 999px;
+}
+
+.admin-content { flex: 1; padding: 1.75rem 1.5rem; }
 
 @media (max-width: 768px) {
   .admin-sidebar { transform: translateX(-100%); }
-  .admin-sidebar.collapsed { transform: translateX(0); width: 240px; }
+  .admin-sidebar.collapsed { transform: translateX(0); width: 232px; }
   .admin-main { margin-left: 0 !important; }
   .mobile-menu-btn { display: flex; }
 }

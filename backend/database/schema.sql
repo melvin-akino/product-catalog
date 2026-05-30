@@ -72,6 +72,18 @@ CREATE TABLE IF NOT EXISTS seo (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Admin users
+CREATE TABLE IF NOT EXISTS users (
+  user_id    INT AUTO_INCREMENT PRIMARY KEY,
+  username   VARCHAR(80)  NOT NULL UNIQUE,
+  email      VARCHAR(150) NOT NULL UNIQUE,
+  password   VARCHAR(255) NOT NULL,
+  role       ENUM('admin','viewer') NOT NULL DEFAULT 'viewer',
+  status     ENUM('active','inactive') NOT NULL DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 -- Default seed data
 INSERT IGNORE INTO categories (name, description, slug) VALUES
   ('Equipment', 'Professional-grade equipment for all applications', 'equipment'),

@@ -72,6 +72,13 @@ export const authApi = {
   verify: () => api.post('/auth/verify'),
 };
 
+export const usersApi = {
+  getAll: () => api.get('/users'),
+  create: (data) => api.post('/users', data),
+  update: (id, data) => api.put(`/users/${id}`, data),
+  delete: (id) => api.delete(`/users/${id}`),
+};
+
 export const uploadApi = {
   uploadImages: (files) => {
     const form = new FormData();
