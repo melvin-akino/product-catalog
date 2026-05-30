@@ -514,13 +514,9 @@ cmd_deploy() {
   transfer_files "$PUBLIC_IP"
 
   # ── 9. Start containers ───────────────────────────────────────
-  # Re-login needed after usermod docker group (newgrp doesn't persist across SSH sessions)
-  # We run docker via sudo for the first invocation to be safe
   remote "$PUBLIC_IP" bash <<COMPOSE_UP
 cd ${APP_DIR}
-# Use sg to get docker group without re-login
-newgrp docker 2>/dev/null || true
-docker compose up --build -d
+sudo docker compose up --build -d
 COMPOSE_UP
   success "Containers launched"
 
