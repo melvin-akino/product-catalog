@@ -22,9 +22,6 @@
       </ul>
 
       <div class="nav-right">
-        <RouterLink to="/admin/login" class="admin-link" title="Admin Panel">
-          <Lock :size="16" />
-        </RouterLink>
         <button class="hamburger" @click="menuOpen = !menuOpen" aria-label="Toggle menu">
           <Menu v-if="!menuOpen" :size="22" />
           <X v-else :size="22" />
@@ -37,7 +34,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink } from 'vue-router';
-import { Zap, Lock, Menu, X } from 'lucide-vue-next';
+import { Zap, Menu, X } from 'lucide-vue-next';
 import { companyApi } from '@/api/index';
 
 const isScrolled = ref(false);
@@ -105,13 +102,6 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll));
 .btn-cta::after { display: none !important; }
 
 .nav-right { display: flex; align-items: center; gap: 0.5rem; }
-.admin-link {
-  display: flex; align-items: center;
-  color: var(--text-muted); padding: 0.4rem;
-  border-radius: var(--radius); transition: color 0.2s;
-}
-.admin-link:hover { color: var(--green-primary); }
-
 .hamburger { display: none; background: none; color: var(--text-primary); padding: 0.25rem; }
 
 @media (max-width: 820px) {

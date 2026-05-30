@@ -67,7 +67,6 @@
         <div class="footer-bottom-links">
           <RouterLink to="/shipping">Shipping</RouterLink>
           <RouterLink to="/terms">Terms</RouterLink>
-          <RouterLink to="/admin/login" class="admin-link">Admin</RouterLink>
         </div>
       </div>
     </div>
@@ -147,7 +146,6 @@ onMounted(async () => {
 .footer-bottom-links { display: flex; gap: 1.5rem; }
 .footer-bottom-links a { color: var(--text-muted); transition: color 0.2s; }
 .footer-bottom-links a:hover { color: var(--green-primary); }
-.admin-link { opacity: 0.5; }
 
 @media (max-width: 900px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) {
