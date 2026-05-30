@@ -266,16 +266,35 @@ BOOTSTRAP
   success "Docker + Compose + Buildx ready"
 }
 
+# ── Helper: build frontend locally ────────────────────────────
+build_frontend_local() {
+  step "Building frontend locally"
+  local fe_dir="$SCRIPT_DIR/frontend"
+
+  info "Installing frontend dependencies (if needed) ..."
+  (cd "$fe_dir" && npm install --prefer-offline --silent 2>/dev/null) \
+    || (cd "$fe_dir" && npm install --silent) \
+    || error "npm install failed in frontend/."
+
+  info "Running Vite build ..."
+  (cd "$fe_dir" && npm run build) || error "Frontend build failed. Fix errors and retry."
+  success "Frontend built → frontend/dist/"
+}
+
 # ── Helper: transfer project files ────────────────────────────
 transfer_files() {
   local ip="$1"
+
+  # Build frontend on local machine — keeps EC2 RAM free
+  build_frontend_local
+
   step "Transferring project files"
 
   # Check .env files exist
   [[ ! -f "$SCRIPT_DIR/.env" ]]         && error ".env not found. Run ./setup.sh first."
   [[ ! -f "$SCRIPT_DIR/.env.backend" ]] && error ".env.backend not found. Run ./setup.sh first."
 
-  # Create tarball (exclude dev artifacts)
+  # Create tarball (exclude dev artifacts; dist/ is included — already built)
   local TMP_TAR
   TMP_TAR="$(mktemp /tmp/eon-deploy-XXXXXX.tar.gz)"
   info "Packing project files ..."
@@ -283,7 +302,6 @@ transfer_files() {
     --exclude='./.git' \
     --exclude='./backend/node_modules' \
     --exclude='./frontend/node_modules' \
-    --exclude='./frontend/dist' \
     --exclude='./uploads' \
     --exclude='./.env' \
     --exclude='./.env.backend' \
@@ -384,6 +402,8 @@ cmd_deploy() {
   command -v scp  &>/dev/null || error "scp not found. Install OpenSSH."
   command -v tar  &>/dev/null || error "tar not found."
   command -v curl &>/dev/null || error "curl not found."
+  command -v node &>/dev/null || error "Node.js not found. Install from https://nodejs.org/"
+  command -v npm  &>/dev/null || error "npm not found."
 
   # Verify AWS credentials
   aws sts get-caller-identity --region "$REGION" &>/dev/null \
