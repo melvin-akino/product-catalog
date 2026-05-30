@@ -49,6 +49,11 @@ banner() {
   echo ""
 }
 
+# ── SSL fix for Windows corporate/intercepting proxy ──────────
+# AWS CLI v2 bundles its own Python+certs; the only reliable bypass is
+# injecting --no-verify-ssl into every aws call via this wrapper.
+aws() { command aws --no-verify-ssl "$@" 2>/dev/null; }
+
 # ── Config ─────────────────────────────────────────────────────
 REGION="ap-southeast-1"
 INSTANCE_TYPE="t3.micro"
@@ -160,6 +165,8 @@ get_eip_address() {
 }
 
 # ── Helper: allocate EIP if needed, then associate ────────────
+# Sets global EIP_ADDRESS — do NOT call inside $(...) capture.
+EIP_ADDRESS=""
 ensure_eip() {
   local instance_id="$1"
   step "Elastic IP"
@@ -169,29 +176,33 @@ ensure_eip() {
 
   if [[ -z "$alloc_id" ]]; then
     info "Allocating new Elastic IP ..."
-    alloc_id=$(aws ec2 allocate-address \
+    alloc_id=$(command aws --no-verify-ssl ec2 allocate-address \
       --region "$REGION" \
       --domain vpc \
       --query 'AllocationId' \
-      --output text)
-    aws ec2 create-tags --region "$REGION" \
+      --output text 2>&1)
+    [[ -z "$alloc_id" || "$alloc_id" == None ]] && error "Failed to allocate Elastic IP. Check AWS limits."
+    command aws --no-verify-ssl ec2 create-tags --region "$REGION" \
       --resources "$alloc_id" \
-      --tags "Key=Name,Value=${PROJECT_NAME}-eip"
-    success "Elastic IP allocated"
+      --tags "Key=Name,Value=${PROJECT_NAME}-eip" 2>/dev/null
+    success "Elastic IP allocated (alloc: ${alloc_id})"
   else
-    success "Elastic IP exists: $(get_eip_address)"
+    success "Elastic IP allocation found: ${alloc_id}"
   fi
 
-  info "Associating Elastic IP with ${instance_id} ..."
-  aws ec2 associate-address \
+  info "Associating with instance ${instance_id} ..."
+  command aws --no-verify-ssl ec2 associate-address \
     --region "$REGION" \
     --instance-id "$instance_id" \
     --allocation-id "$alloc_id" \
-    --allow-reassociation &>/dev/null
-  local eip
-  eip="$(get_eip_address)"
-  success "Elastic IP associated: ${eip} (permanent - survives stop/start)"
-  echo "$eip"
+    --allow-reassociation \
+    --output text 2>/dev/null || warn "Association call returned non-zero (may already be associated)"
+
+  # Give AWS a moment to reflect the association
+  sleep 3
+  EIP_ADDRESS="$(get_eip_address)"
+  [[ -z "$EIP_ADDRESS" ]] && error "Could not read Elastic IP after association. Check AWS console."
+  success "Elastic IP: ${EIP_ADDRESS} (permanent - survives stop/start)"
 }
 
 # ── Helper: bootstrap Docker on a fresh Amazon Linux 2023 ─────
@@ -490,7 +501,8 @@ cmd_deploy() {
   success "Status checks passed"
 
   # ── 5b. Elastic IP ────────────────────────────────────────────
-  PUBLIC_IP="$(ensure_eip "$INSTANCE_ID")"
+  ensure_eip "$INSTANCE_ID"
+  PUBLIC_IP="$EIP_ADDRESS"
 
   # ── 6. Wait for SSH ───────────────────────────────────────────
   wait_for_ssh "$PUBLIC_IP"
@@ -654,7 +666,8 @@ cmd_start() {
   aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID" --region "$REGION"
 
   # Re-associate Elastic IP (it detaches on stop)
-  PUBLIC_IP="$(ensure_eip "$INSTANCE_ID")"
+  ensure_eip "$INSTANCE_ID"
+  PUBLIC_IP="$EIP_ADDRESS"
 
   wait_for_ssh "$PUBLIC_IP"
 
