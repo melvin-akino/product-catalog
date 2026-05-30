@@ -4,6 +4,7 @@
 
     <!-- ── Hero ──────────────────────────────────────────────── -->
     <section class="hero">
+      <div class="container hero-container">
       <div class="hero-left">
         <span class="hero-eyebrow">
           <span class="eyebrow-dot"></span> Trusted B2B Supplier
@@ -53,6 +54,7 @@
         <div class="showcase-glow"></div>
       </div>
 
+      </div><!-- /.hero-container -->
       <div class="hero-gradient"></div>
     </section>
 
@@ -219,10 +221,13 @@ function getCatIcon(name) {
 <style scoped>
 /* ── Hero ───────────────────────────────────────────────────── */
 .hero {
-  display: flex; align-items: center; justify-content: space-between;
   min-height: 100vh; padding-top: 68px;
   position: relative; overflow: hidden;
+}
+.hero-container {
+  display: flex; align-items: center; justify-content: space-between;
   gap: 3rem;
+  min-height: calc(100vh - 68px);
 }
 .hero-gradient {
   position: absolute; inset: 0; pointer-events: none;
@@ -440,7 +445,8 @@ function getCatIcon(name) {
   .products-skeleton { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 860px) {
-  .hero { flex-direction: column; min-height: unset; padding: 100px 0 3rem; }
+  .hero { min-height: unset; padding: 100px 0 3rem; }
+  .hero-container { flex-direction: column; min-height: unset; }
   .hero-left { max-width: 100%; padding: 0; text-align: center; }
   .hero-eyebrow { justify-content: center; }
   .hero-actions { justify-content: center; }
