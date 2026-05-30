@@ -141,35 +141,118 @@ wait_for_ssh() {
   success "SSH ready"
 }
 
+# ── Helper: get existing Elastic IP allocation ID ─────────────
+get_eip_alloc_id() {
+  aws ec2 describe-addresses \
+    --region "$REGION" \
+    --filters "Name=tag:Name,Values=${PROJECT_NAME}-eip" \
+    --query 'Addresses[0].AllocationId' \
+    --output text 2>/dev/null | grep -v '^None$' || true
+}
+
+# ── Helper: get Elastic IP address ────────────────────────────
+get_eip_address() {
+  aws ec2 describe-addresses \
+    --region "$REGION" \
+    --filters "Name=tag:Name,Values=${PROJECT_NAME}-eip" \
+    --query 'Addresses[0].PublicIp' \
+    --output text 2>/dev/null | grep -v '^None$' || true
+}
+
+# ── Helper: allocate EIP if needed, then associate ────────────
+ensure_eip() {
+  local instance_id="$1"
+  step "Elastic IP"
+
+  local alloc_id
+  alloc_id="$(get_eip_alloc_id)"
+
+  if [[ -z "$alloc_id" ]]; then
+    info "Allocating new Elastic IP ..."
+    alloc_id=$(aws ec2 allocate-address \
+      --region "$REGION" \
+      --domain vpc \
+      --query 'AllocationId' \
+      --output text)
+    aws ec2 create-tags --region "$REGION" \
+      --resources "$alloc_id" \
+      --tags "Key=Name,Value=${PROJECT_NAME}-eip"
+    success "Elastic IP allocated"
+  else
+    success "Elastic IP exists: $(get_eip_address)"
+  fi
+
+  info "Associating Elastic IP with ${instance_id} ..."
+  aws ec2 associate-address \
+    --region "$REGION" \
+    --instance-id "$instance_id" \
+    --allocation-id "$alloc_id" \
+    --allow-reassociation &>/dev/null
+  local eip
+  eip="$(get_eip_address)"
+  success "Elastic IP associated: ${eip} (permanent - survives stop/start)"
+  echo "$eip"
+}
+
 # ── Helper: bootstrap Docker on a fresh Amazon Linux 2023 ─────
 bootstrap_docker() {
   local ip="$1"
-  info "Installing Docker on instance (idempotent) ..."
+  info "Installing Docker + Compose + Buildx on instance (idempotent) ..."
   remote "$ip" bash <<'BOOTSTRAP'
 set -e
+PLUGIN_DIR="/usr/local/lib/docker/cli-plugins"
+sudo mkdir -p "$PLUGIN_DIR"
+
+# ── Docker engine ──────────────────────────────────────────────
 if ! command -v docker &>/dev/null; then
   sudo dnf install -y docker
   sudo systemctl enable --now docker
   sudo usermod -aG docker ec2-user
   echo "Docker installed."
 else
+  sudo systemctl start docker 2>/dev/null || true
   echo "Docker already installed."
 fi
 
-# Docker Compose plugin
-COMPOSE_PLUGIN="/usr/local/lib/docker/cli-plugins/docker-compose"
+# ── Docker Compose plugin ──────────────────────────────────────
+COMPOSE_PLUGIN="${PLUGIN_DIR}/docker-compose"
 if [[ ! -f "$COMPOSE_PLUGIN" ]]; then
-  sudo mkdir -p /usr/local/lib/docker/cli-plugins
   LATEST=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
-  sudo curl -SL "https://github.com/docker/compose/releases/download/${LATEST}/docker-compose-linux-x86_64" \
+  sudo curl -fsSL "https://github.com/docker/compose/releases/download/${LATEST}/docker-compose-linux-x86_64" \
     -o "$COMPOSE_PLUGIN"
   sudo chmod +x "$COMPOSE_PLUGIN"
   echo "Docker Compose ${LATEST} installed."
 else
   echo "Docker Compose already installed."
 fi
+
+# ── Docker Buildx plugin (required by compose build >= 2.25) ──
+BUILDX_PLUGIN="${PLUGIN_DIR}/docker-buildx"
+NEED_BUILDX=false
+if [[ ! -f "$BUILDX_PLUGIN" ]]; then
+  NEED_BUILDX=true
+else
+  # Upgrade if version < 0.17.0
+  CURRENT=$(docker buildx version 2>/dev/null | grep -oP 'v\K[0-9]+\.[0-9]+' | head -1 || echo "0.0")
+  MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+  MINOR=$(echo "$CURRENT" | cut -d. -f2)
+  if [[ "$MAJOR" -eq 0 && "$MINOR" -lt 17 ]]; then
+    NEED_BUILDX=true
+    echo "Buildx ${CURRENT} is too old, upgrading..."
+  else
+    echo "Buildx v${CURRENT} is up to date."
+  fi
+fi
+
+if [[ "$NEED_BUILDX" == "true" ]]; then
+  BX_VER=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+  sudo curl -fsSL "https://github.com/docker/buildx/releases/download/${BX_VER}/buildx-${BX_VER}.linux-amd64" \
+    -o "$BUILDX_PLUGIN"
+  sudo chmod +x "$BUILDX_PLUGIN"
+  echo "Buildx ${BX_VER} installed."
+fi
 BOOTSTRAP
-  success "Docker + Compose ready"
+  success "Docker + Compose + Buildx ready"
 }
 
 # ── Helper: transfer project files ────────────────────────────
@@ -406,8 +489,8 @@ cmd_deploy() {
   aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID" --region "$REGION"
   success "Status checks passed"
 
-  PUBLIC_IP="$(get_public_ip "$INSTANCE_ID")"
-  success "Public IP: ${PUBLIC_IP}"
+  # ── 5b. Elastic IP ────────────────────────────────────────────
+  PUBLIC_IP="$(ensure_eip "$INSTANCE_ID")"
 
   # ── 6. Wait for SSH ───────────────────────────────────────────
   wait_for_ssh "$PUBLIC_IP"
@@ -460,12 +543,17 @@ cmd_status() {
   STATE="$(get_instance_state "$INSTANCE_ID")"
   PUBLIC_IP="$(get_public_ip "$INSTANCE_ID" || true)"
 
-  echo -e "  ${WHITE}Instance${NC}  : ${INSTANCE_ID}"
-  echo -e "  ${WHITE}State${NC}     : $( [[ "$STATE" == "running" ]] && echo "${GREEN}${STATE}${NC}" || echo "${YELLOW}${STATE}${NC}" )"
-  echo -e "  ${WHITE}Region${NC}    : ${REGION}"
-  echo -e "  ${WHITE}Type${NC}      : ${INSTANCE_TYPE}"
-  echo -e "  ${WHITE}Public IP${NC} : ${PUBLIC_IP:-N/A}"
-  [[ -n "$PUBLIC_IP" ]] && echo -e "  ${WHITE}App URL${NC}   : ${CYAN}http://${PUBLIC_IP}:${APP_PORT}${NC}"
+  local EIP_ADDR
+  EIP_ADDR="$(get_eip_address || true)"
+
+  echo -e "  ${WHITE}Instance${NC}      : ${INSTANCE_ID}"
+  echo -e "  ${WHITE}State${NC}         : $( [[ "$STATE" == "running" ]] && echo "${GREEN}${STATE}${NC}" || echo "${YELLOW}${STATE}${NC}" )"
+  echo -e "  ${WHITE}Region${NC}        : ${REGION}"
+  echo -e "  ${WHITE}Type${NC}          : ${INSTANCE_TYPE}"
+  [[ -n "$EIP_ADDR" ]] && echo -e "  ${WHITE}Elastic IP${NC}    : ${GREEN}${EIP_ADDR}${NC} ${DIM}(permanent)${NC}"
+  echo -e "  ${WHITE}Public IP${NC}     : ${PUBLIC_IP:-N/A}"
+  local DISPLAY_IP="${EIP_ADDR:-$PUBLIC_IP}"
+  [[ -n "$DISPLAY_IP" ]] && echo -e "  ${WHITE}App URL${NC}       : ${CYAN}http://${DISPLAY_IP}:${APP_PORT}${NC}"
   echo ""
 
   if [[ "$STATE" == "running" && -n "$PUBLIC_IP" ]]; then
@@ -565,9 +653,8 @@ cmd_start() {
   aws ec2 wait instance-running --instance-ids "$INSTANCE_ID" --region "$REGION"
   aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID" --region "$REGION"
 
-  PUBLIC_IP="$(get_public_ip "$INSTANCE_ID")"
-  success "Instance running: ${PUBLIC_IP}"
-  warn "Public IP may have changed after restart — check the URL below."
+  # Re-associate Elastic IP (it detaches on stop)
+  PUBLIC_IP="$(ensure_eip "$INSTANCE_ID")"
 
   wait_for_ssh "$PUBLIC_IP"
 
@@ -596,6 +683,16 @@ cmd_destroy() {
     success "Instance terminated"
   else
     warn "No instance found."
+  fi
+
+  local eip_alloc
+  eip_alloc="$(get_eip_alloc_id || true)"
+  if [[ -n "$eip_alloc" ]]; then
+    read -rp "  Also release Elastic IP ($(get_eip_address))? [y/N]: " DEL_EIP
+    if [[ "${DEL_EIP:-N}" =~ ^[Yy]$ ]]; then
+      aws ec2 release-address --allocation-id "$eip_alloc" --region "$REGION" 2>/dev/null || true
+      success "Elastic IP released"
+    fi
   fi
 
   read -rp "  Also delete security group '${SG_NAME}'? [y/N]: " DEL_SG
