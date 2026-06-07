@@ -1,13 +1,15 @@
 services:
 
-  # ── MySQL Database ────────────────────────────────────────────────────
+  # ── MariaDB Database ──────────────────────────────────────────────────
+  # MariaDB 11 is a drop-in MySQL replacement using ~200MB RAM vs MySQL 8's
+  # ~380MB — saving ~180MB on our t3.micro (1 GB total).
   mysql:
-    image: mysql:8.0
+    image: mariadb:11
     container_name: eon_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-eon_secret}
-      MYSQL_DATABASE: ${DB_NAME:-product_catalog}
+      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD:-eon_secret}
+      MARIADB_DATABASE: ${DB_NAME:-product_catalog}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
@@ -15,7 +17,7 @@ services:
     ports:
       - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-eon_secret}"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
       retries: 12
