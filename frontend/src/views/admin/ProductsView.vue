@@ -9,7 +9,7 @@
       <input v-model="search" placeholder="Search products…" style="max-width: 320px;" @input="loadProducts" />
       <select v-model="filterCategory" @change="loadProducts" style="width:auto;">
         <option value="">All Categories</option>
-        <option v-for="c in categories" :key="c.category_id" :value="c.category_id">{{ c.name }}</option>
+        <option v-for="c in categories" :key="c.category_id" :value="c.slug">{{ c.name }}</option>
       </select>
     </div>
 
@@ -223,6 +223,7 @@ function onDrop(e) {
 async function loadProducts() {
   const params = { limit: 50 };
   if (search.value) params.search = search.value;
+  if (filterCategory.value) params.category = filterCategory.value;
   try {
     const { data } = await productsApi.getAll(params);
     products.value = data.products;
