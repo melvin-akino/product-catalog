@@ -117,8 +117,14 @@
           <!-- ── / Image Manager ────────────────────────── -->
 
           <div class="form-group">
-            <label>Specifications (JSON object)</label>
-            <textarea v-model="specsText" rows="4" placeholder='{"Power": "500W", "Voltage": "220V"}'></textarea>
+            <label>Specifications</label>
+            <QuillEditor
+              v-model:content="specsText"
+              content-type="html"
+              :toolbar="specsToolbar"
+              theme="snow"
+              class="specs-editor"
+            />
           </div>
           <label class="check-label" style="margin-bottom:1.25rem; display:flex; gap:0.5rem; align-items:center; cursor:pointer;">
             <input type="checkbox" v-model="form.featured" style="width:auto;" />
@@ -138,7 +144,15 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { QuillEditor } from '@vueup/vue-quill';
 import { productsApi, categoriesApi, uploadApi } from '@/api/index';
+
+const specsToolbar = [
+  ['bold', 'italic', 'underline'],
+  [{ list: 'ordered' }, { list: 'bullet' }],
+  [{ header: [2, 3, false] }],
+  ['clean'],
+];
 
 const products = ref([]);
 const categories = ref([]);
@@ -150,7 +164,7 @@ const editingId = ref(null);
 const saving = ref(false);
 const saveSuccess = ref(false);
 const saveError = ref('');
-const specsText = ref('{}');
+const specsText = ref('');
 
 // Image manager state
 const imageList = ref([]);   // array of URL strings (absolute or /uploads/…)
@@ -226,12 +240,12 @@ function openModal(p = null) {
     form.value = { name: p.name, description: p.description || '', category_id: p.category_id || '', status: p.status, featured: !!p.featured };
     const imgs = typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []);
     imageList.value = Array.isArray(imgs) ? [...imgs] : [];
-    specsText.value = typeof p.specifications === 'string' ? p.specifications : JSON.stringify(p.specifications || {});
+    specsText.value = typeof p.specifications === 'string' ? p.specifications : (p.specifications ? JSON.stringify(p.specifications) : '');
   } else {
     editingId.value = null;
     form.value = { name: '', description: '', category_id: '', status: 'active', featured: false };
     imageList.value = [];
-    specsText.value = '{}';
+    specsText.value = '';
   }
   modalOpen.value = true;
 }
@@ -239,12 +253,10 @@ function openModal(p = null) {
 async function saveProduct() {
   saveError.value = '';
   if (!form.value.name.trim()) { saveError.value = 'Product name is required.'; return; }
-  let specifications;
-  try { specifications = JSON.parse(specsText.value); } catch { saveError.value = 'Specifications must be valid JSON object.'; return; }
 
   saving.value = true;
   try {
-    const payload = { ...form.value, images: imageList.value, specifications };
+    const payload = { ...form.value, images: imageList.value, specifications: specsText.value || null };
     if (editingId.value) {
       await productsApi.update(editingId.value, payload);
     } else {
@@ -332,4 +344,29 @@ onMounted(async () => {
   display: flex; gap: 0.5rem;
 }
 .url-add-row input { flex: 1; }
+
+/* Quill specs editor — override default Quill styles to match dark admin theme */
+.specs-editor :deep(.ql-toolbar) {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.specs-editor :deep(.ql-container) {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  min-height: 140px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.specs-editor :deep(.ql-editor) { min-height: 120px; }
+.specs-editor :deep(.ql-toolbar .ql-stroke) { stroke: var(--text-secondary); }
+.specs-editor :deep(.ql-toolbar .ql-fill) { fill: var(--text-secondary); }
+.specs-editor :deep(.ql-toolbar .ql-picker) { color: var(--text-secondary); }
+.specs-editor :deep(.ql-toolbar button:hover .ql-stroke),
+.specs-editor :deep(.ql-toolbar button.ql-active .ql-stroke) { stroke: var(--green-primary); }
+.specs-editor :deep(.ql-toolbar button:hover .ql-fill),
+.specs-editor :deep(.ql-toolbar button.ql-active .ql-fill) { fill: var(--green-primary); }
 </style>

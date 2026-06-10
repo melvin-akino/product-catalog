@@ -40,17 +40,20 @@
           </div>
 
           <!-- Specifications -->
-          <div v-if="specs && Object.keys(specs).length" class="specs-section">
+          <div v-if="specs" class="specs-section">
             <h3>Specifications</h3>
             <div class="accent-line"></div>
-            <table class="specs-table">
+            <!-- Legacy JSON key-value format -->
+            <table v-if="specs.type === 'json'" class="specs-table">
               <tbody>
-                <tr v-for="(val, key) in specs" :key="key">
+                <tr v-for="(val, key) in specs.data" :key="key">
                   <td class="spec-key">{{ formatKey(key) }}</td>
                   <td>{{ val }}</td>
                 </tr>
               </tbody>
             </table>
+            <!-- Rich HTML format (from WYSIWYG editor) -->
+            <div v-else class="specs-html" v-html="specs.data"></div>
           </div>
         </div>
       </div>
@@ -99,8 +102,21 @@ const parsedImages = computed(() => {
 });
 
 const specs = computed(() => {
-  if (!product.value?.specifications) return null;
-  return typeof product.value.specifications === 'string' ? JSON.parse(product.value.specifications) : product.value.specifications;
+  const raw = product.value?.specifications;
+  if (!raw) return null;
+  // Legacy: already a parsed object (old JSON column auto-parsed by driver)
+  if (typeof raw === 'object') return { type: 'json', data: raw };
+  // Try to detect legacy JSON string format
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return { type: 'json', data: parsed };
+    }
+  } catch {}
+  // New HTML format from WYSIWYG editor
+  const trimmed = raw.replace(/<[^>]*>/g, '').trim();
+  if (!trimmed) return null;
+  return { type: 'html', data: raw };
 });
 
 function formatKey(key) {
@@ -155,5 +171,14 @@ watch(() => route.params.id, loadProduct);
 .specs-section h3 { margin-bottom: 0.25rem; }
 .specs-table { width: 100%; border-radius: var(--radius); overflow: hidden; margin-top: 0.5rem; }
 .spec-key { color: var(--text-muted); font-size: 0.875rem; font-weight: 600; width: 40%; }
+
+/* Rich HTML specs from WYSIWYG editor */
+.specs-html { margin-top: 0.75rem; font-size: 0.925rem; line-height: 1.7; color: var(--text-secondary); }
+.specs-html :deep(h2), .specs-html :deep(h3) { color: var(--text); margin: 0.75rem 0 0.4rem; font-size: 1rem; }
+.specs-html :deep(ul), .specs-html :deep(ol) { padding-left: 1.5rem; margin: 0.4rem 0; }
+.specs-html :deep(li) { margin-bottom: 0.25rem; }
+.specs-html :deep(strong) { color: var(--text); }
+.specs-html :deep(p) { margin: 0.35rem 0; }
+
 @media (max-width: 900px) { .product-grid { grid-template-columns: 1fr; } }
 </style>

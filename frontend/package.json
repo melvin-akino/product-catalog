@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vueup/vue-quill": "^1.5.3",
     "axios": "^1.6.7",
     "lucide-vue-next": "^1.0.0",
     "pinia": "^2.1.7",

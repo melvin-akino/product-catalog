@@ -85,7 +85,7 @@ router.post(
         [
           name,
           description || null,
-          specifications ? JSON.stringify(specifications) : null,
+          specifications || null,
           images ? JSON.stringify(images) : JSON.stringify([]),
           category_id || null,
           slug,
@@ -111,7 +111,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       [
         name,
         description || null,
-        specifications ? JSON.stringify(specifications) : null,
+        specifications || null,
         images ? JSON.stringify(images) : null,
         category_id || null,
         featured ? 1 : 0,

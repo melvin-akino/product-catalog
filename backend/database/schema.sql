@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS products (
   product_id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   description TEXT,
-  specifications JSON,
+  specifications LONGTEXT,
   images JSON,
   category_id INT,
   slug VARCHAR(300) UNIQUE NOT NULL,
