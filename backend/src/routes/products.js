@@ -4,6 +4,15 @@ const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
+// Normalise specifications before storing: always string | null, never object.
+// Guards against legacy callers sending a plain JS object which mysql2 would
+// silently coerce to the literal string "[object Object]".
+function normalizeSpecs(value) {
+  if (value == null) return null;
+  if (typeof value === 'string') return value.trim() || null;
+  return JSON.stringify(value); // object/array fallback — shouldn't happen with WYSIWYG
+}
+
 // GET /api/products — client-facing with optional filters
 router.get('/', async (req, res) => {
   try {
@@ -85,7 +94,7 @@ router.post(
         [
           name,
           description || null,
-          specifications || null,
+          normalizeSpecs(specifications),
           images ? JSON.stringify(images) : JSON.stringify([]),
           category_id || null,
           slug,
@@ -111,7 +120,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       [
         name,
         description || null,
-        specifications || null,
+        normalizeSpecs(specifications),
         images ? JSON.stringify(images) : null,
         category_id || null,
         featured ? 1 : 0,
