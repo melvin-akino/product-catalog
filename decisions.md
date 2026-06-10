@@ -70,6 +70,15 @@
 
 ---
 
+## ADR-009 — nginx ^~ modifier on /uploads/ location
+
+**Status:** Accepted (2026-06-11)
+**Context:** nginx regex location `~* \.(jpg|png|gif|...)$` has higher priority than a plain prefix location `/uploads/`. Upload requests like `/uploads/photo.jpg` matched the regex and were served from nginx's own static directory (where they don't exist), returning 404 instead of proxying to the backend.
+**Decision:** Add `^~` modifier: `location ^~ /uploads/ { proxy_pass http://backend:3000; }`. The `^~` modifier tells nginx to skip all regex evaluation when this prefix matches — ensuring upload requests always reach the backend.
+**Rule:** Any nginx config with both a file-extension regex cache block AND a proxy location must use `^~` on the proxy location to prevent regex override.
+
+---
+
 ## ADR-008 — Elastic IP assigned permanently
 
 **Status:** Accepted
