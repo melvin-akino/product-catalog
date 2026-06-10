@@ -18,9 +18,18 @@
         v-model:content="content"
         content-type="html"
         :toolbar="toolbar"
+        :modules="quillModules"
         theme="snow"
         class="content-editor"
+        @ready="onEditorReady"
       />
+      <div class="table-insert-bar">
+        <span class="table-insert-label">Insert table:</span>
+        <input v-model.number="tableRows" type="number" min="1" max="10" class="table-dim-input" />
+        <span class="table-insert-label">×</span>
+        <input v-model.number="tableCols" type="number" min="1" max="10" class="table-dim-input" />
+        <button class="btn-outline btn-sm" @click="insertTable">Insert Table</button>
+      </div>
       <div class="editor-actions">
         <button class="btn-primary" @click="save" :disabled="saving">{{ saving ? 'Saving…' : 'Save Changes' }}</button>
         <span v-if="saved" class="alert alert-success" style="padding:0.5rem 1rem;display:inline-flex;">Saved!</span>
@@ -37,6 +46,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { QuillEditor } from '@vueup/vue-quill';
+import Table from 'quill/modules/table.js';
 import { contentApi } from '@/api/index';
 
 const toolbar = [
@@ -59,6 +69,16 @@ const content = ref('');
 const loading = ref(false);
 const saving = ref(false);
 const saved = ref(false);
+const quillModules = [{ name: 'table', module: Table, options: {} }];
+const editorQuill = ref(null);
+const tableRows = ref(3);
+const tableCols = ref(3);
+
+function onEditorReady(quill) { editorQuill.value = quill; }
+function insertTable() {
+  if (!editorQuill.value) return;
+  editorQuill.value.getModule('table').insertTable(tableRows.value, tableCols.value);
+}
 
 async function selectPage(key) {
   activePage.value = key;
@@ -138,4 +158,21 @@ onMounted(() => selectPage('about'));
 .content-editor :deep(.ql-editor h3),
 .content-editor :deep(.ql-editor h4) { color: var(--text); }
 .content-editor :deep(.ql-editor a) { color: var(--green-primary); }
+.content-editor :deep(.ql-editor table) {
+  border-collapse: collapse; width: 100%; margin: 0.5rem 0;
+}
+.content-editor :deep(.ql-editor td) {
+  border: 1px solid var(--border); padding: 0.4rem 0.6rem;
+  min-width: 80px; color: var(--text);
+}
+
+.table-insert-bar {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-top: 0.5rem; flex-wrap: wrap;
+}
+.table-insert-label { font-size: 0.8rem; color: var(--text-muted); }
+.table-dim-input {
+  width: 52px; text-align: center; padding: 0.25rem 0.4rem;
+  font-size: 0.85rem;
+}
 </style>

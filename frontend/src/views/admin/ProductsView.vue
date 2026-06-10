@@ -122,9 +122,18 @@
               v-model:content="specsText"
               content-type="html"
               :toolbar="specsToolbar"
+              :modules="quillModules"
               theme="snow"
               class="specs-editor"
+              @ready="onSpecsReady"
             />
+            <div class="table-insert-bar">
+              <span class="table-insert-label">Insert table:</span>
+              <input v-model.number="tableRows" type="number" min="1" max="10" class="table-dim-input" />
+              <span class="table-insert-label">×</span>
+              <input v-model.number="tableCols" type="number" min="1" max="10" class="table-dim-input" />
+              <button class="btn-outline btn-sm" @click="insertSpecsTable">Insert Table</button>
+            </div>
           </div>
           <label class="check-label" style="margin-bottom:1.25rem; display:flex; gap:0.5rem; align-items:center; cursor:pointer;">
             <input type="checkbox" v-model="form.featured" style="width:auto;" />
@@ -145,6 +154,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { QuillEditor } from '@vueup/vue-quill';
+import Table from 'quill/modules/table.js';
 import { productsApi, categoriesApi, uploadApi } from '@/api/index';
 
 const specsToolbar = [
@@ -153,6 +163,17 @@ const specsToolbar = [
   [{ header: [2, 3, false] }],
   ['clean'],
 ];
+
+const quillModules = [{ name: 'table', module: Table, options: {} }];
+const specsQuill = ref(null);
+const tableRows = ref(3);
+const tableCols = ref(3);
+
+function onSpecsReady(quill) { specsQuill.value = quill; }
+function insertSpecsTable() {
+  if (!specsQuill.value) return;
+  specsQuill.value.getModule('table').insertTable(tableRows.value, tableCols.value);
+}
 
 const products = ref([]);
 const categories = ref([]);
@@ -370,4 +391,21 @@ onMounted(async () => {
 .specs-editor :deep(.ql-toolbar button.ql-active .ql-stroke) { stroke: var(--green-primary); }
 .specs-editor :deep(.ql-toolbar button:hover .ql-fill),
 .specs-editor :deep(.ql-toolbar button.ql-active .ql-fill) { fill: var(--green-primary); }
+.specs-editor :deep(.ql-editor table) {
+  border-collapse: collapse; width: 100%; margin: 0.5rem 0;
+}
+.specs-editor :deep(.ql-editor td) {
+  border: 1px solid var(--border); padding: 0.4rem 0.6rem;
+  min-width: 80px; color: var(--text);
+}
+
+.table-insert-bar {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-top: 0.5rem; flex-wrap: wrap;
+}
+.table-insert-label { font-size: 0.8rem; color: var(--text-muted); }
+.table-dim-input {
+  width: 52px; text-align: center; padding: 0.25rem 0.4rem;
+  font-size: 0.85rem;
+}
 </style>
