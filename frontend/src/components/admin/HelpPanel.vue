@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <Transition name="help-overlay">
-      <div v-if="open" class="help-overlay" @click.self="$emit('close')" />
+      <div v-if="open" class="help-overlay" />
     </Transition>
     <Transition name="help-panel">
       <aside v-if="open" class="help-panel" role="complementary" aria-label="Help">
@@ -52,13 +52,17 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
   open: { type: Boolean, default: false },
   page: { type: String, default: '' },
 });
-defineEmits(['close']);
+const emit = defineEmits(['close']);
+
+function onKeyDown(e) { if (e.key === 'Escape') emit('close'); }
+onMounted(() => document.addEventListener('keydown', onKeyDown));
+onUnmounted(() => document.removeEventListener('keydown', onKeyDown));
 
 const query = ref('');
 const expanded = ref(null);

@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div class="modal-overlay" @click.self="$emit('close')">
+    <div class="modal-overlay">
       <div class="modal inquire-modal">
         <button class="modal-close" @click="$emit('close')">✕</button>
         <div class="modal-header">
@@ -43,16 +43,21 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { companyApi } from '@/api/index';
 
 defineProps({ productName: { type: String, default: 'this product' } });
-defineEmits(['close']);
+const emit = defineEmits(['close']);
+
+function onKeyDown(e) { if (e.key === 'Escape') emit('close'); }
 
 const company = ref({});
 onMounted(async () => {
+  document.addEventListener('keydown', onKeyDown);
   try { const { data } = await companyApi.get(); company.value = data; } catch {}
 });
+
+onUnmounted(() => document.removeEventListener('keydown', onKeyDown));
 
 const email = computed(() => company.value.email || 'info@eonmarketing.com');
 const phone = computed(() => company.value.phone || '+1 (555) 000-0000');

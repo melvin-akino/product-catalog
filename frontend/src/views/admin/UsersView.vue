@@ -75,7 +75,7 @@
     </div>
 
     <!-- Create / Edit Modal -->
-    <div v-if="modal.open" class="modal-overlay" @click.self="closeModal">
+    <div v-if="modal.open" class="modal-overlay">
       <div class="modal modal-lg">
         <button class="modal-close" @click="closeModal"><X :size="16" /></button>
         <h3 class="modal-title">{{ modal.editing ? 'Edit User' : 'Add User' }}</h3>
@@ -140,7 +140,7 @@
     </div>
 
     <!-- Delete confirmation -->
-    <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
+    <div v-if="deleteTarget" class="modal-overlay">
       <div class="modal modal-sm">
         <button class="modal-close" @click="deleteTarget = null"><X :size="16" /></button>
         <div class="delete-icon-wrap"><Trash2 :size="28" /></div>
@@ -161,7 +161,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import {
   Users, UserPlus, Pencil, Trash2, X,
   Shield, Eye, EyeOff, Search,
@@ -179,7 +179,13 @@ const formError = ref('');
 const modal = ref({ open: false, editing: false, id: null });
 const form = ref({ username: '', email: '', role: 'viewer', status: 'active', password: '' });
 
-onMounted(fetchUsers);
+function onKeyDown(e) {
+  if (e.key !== 'Escape') return;
+  if (deleteTarget.value) { deleteTarget.value = null; return; }
+  if (modal.value.open) closeModal();
+}
+onMounted(() => { document.addEventListener('keydown', onKeyDown); fetchUsers(); });
+onUnmounted(() => document.removeEventListener('keydown', onKeyDown));
 
 async function fetchUsers() {
   loading.value = true;

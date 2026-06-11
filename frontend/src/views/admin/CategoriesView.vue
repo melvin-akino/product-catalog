@@ -24,7 +24,7 @@
       </table>
     </div>
 
-    <div v-if="modalOpen" class="modal-overlay" @click.self="modalOpen=false">
+    <div v-if="modalOpen" class="modal-overlay">
       <div class="modal">
         <button class="modal-close" @click="modalOpen=false">✕</button>
         <h3>{{ editingId ? 'Edit Category' : 'Add Category' }}</h3>
@@ -43,7 +43,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { categoriesApi } from '@/api/index';
 
 const categories = ref([]);
@@ -87,7 +87,9 @@ async function deleteCategory(id) {
   await load();
 }
 
-onMounted(load);
+function onKeyDown(e) { if (e.key === 'Escape') modalOpen.value = false; }
+onMounted(() => { document.addEventListener('keydown', onKeyDown); load(); });
+onUnmounted(() => document.removeEventListener('keydown', onKeyDown));
 </script>
 
 <style scoped>

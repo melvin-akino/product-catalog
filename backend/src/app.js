@@ -11,9 +11,12 @@ const socialLinksRoutes = require('./routes/socialLinks');
 const seoRoutes = require('./routes/seo');
 const uploadRoutes = require('./routes/upload');
 const usersRoutes = require('./routes/users');
+const contactRoutes = require('./routes/contact');
+const brandsRoutes = require('./routes/brands');
 
 const app = express();
 
+app.set('trust proxy', 1);
 app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -28,6 +31,8 @@ app.use('/api/social-links', socialLinksRoutes);
 app.use('/api/seo', seoRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/brands', brandsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

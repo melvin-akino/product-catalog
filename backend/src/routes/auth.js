@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
+const { pool } = require('../config/database');
 const router = express.Router();
 
 router.post(
@@ -18,10 +19,33 @@ router.post(
 
     const { username, password } = req.body;
 
+    // Check users table first
+    try {
+      const [rows] = await pool.query(
+        "SELECT * FROM users WHERE username = ? AND role = 'admin' AND status = 'active' LIMIT 1",
+        [username]
+      );
+
+      if (rows.length) {
+        const user = rows[0];
+        const valid = await bcrypt.compare(password, user.password);
+        if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+
+        const token = jwt.sign(
+          { username: user.username, role: user.role, user_id: user.user_id },
+          process.env.JWT_SECRET,
+          { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+        );
+        return res.json({ token, username: user.username, role: user.role });
+      }
+    } catch {
+      // Fall through to env-based auth if DB query fails
+    }
+
+    // Fallback: env-based superadmin
     if (username !== process.env.ADMIN_USERNAME) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
     const validPassword = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -32,7 +56,6 @@ router.post(
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     );
-
     res.json({ token, username, role: 'admin' });
   }
 );

@@ -79,6 +79,14 @@ export const usersApi = {
   delete: (id) => api.delete(`/users/${id}`),
 };
 
+export const brandsApi = {
+  getPublic: () => api.get('/brands'),
+  getAll:    () => api.get('/brands/all'),
+  create:    (data) => api.post('/brands', data),
+  update:    (id, data) => api.put(`/brands/${id}`, data),
+  delete:    (id) => api.delete(`/brands/${id}`),
+};
+
 export const uploadApi = {
   uploadImages: (files) => {
     const form = new FormData();

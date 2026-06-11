@@ -10,12 +10,13 @@
           <span class="eyebrow-dot"></span> Trusted B2B Supplier
         </span>
         <h1>
-          Industrial <span class="text-green">Equipment</span><br />
-          &amp; Lighting<br />Solutions
+          Professional <span class="text-green">Event Equipment</span> and<br />
+          LED Lighting<br />Solutions
         </h1>
         <p class="hero-sub">
-          Professional-grade products built to last — for construction, manufacturing,
-          warehousing, and beyond. Direct pricing, bulk orders welcome.
+          Supplying industrial and professional event equipment, LED displays, and
+          lighting solutions for events, offices, schools, commercial buildings, and
+          more — delivering quality, reliability, and lasting performance.
         </p>
         <div class="hero-actions">
           <RouterLink to="/catalog" class="btn-primary btn-lg">Browse Catalog</RouterLink>
@@ -59,11 +60,14 @@
     </section>
 
     <!-- ── Trust bar ──────────────────────────────────────────── -->
-    <div class="trust-bar">
+    <div v-if="brands.length" class="trust-bar">
       <div class="trust-label">Trusted brands we carry</div>
       <div class="ticker-wrap">
         <div class="ticker">
-          <span v-for="b in brands.concat(brands)" :key="Math.random()">{{ b }}</span>
+          <span v-for="(b, i) in [...brands, ...brands]" :key="i" class="ticker-item">
+            <img v-if="b.logo_url" :src="b.logo_url" :alt="b.name" class="ticker-logo" @error="e => e.target.style.display='none'" />
+            <span class="ticker-name">{{ b.name }}</span>
+          </span>
         </div>
       </div>
     </div>
@@ -172,13 +176,12 @@ import {
 import NavBar from '@/components/NavBar.vue';
 import AppFooter from '@/components/AppFooter.vue';
 import ProductCard from '@/components/ProductCard.vue';
-import { productsApi, categoriesApi } from '@/api/index';
+import { productsApi, categoriesApi, brandsApi } from '@/api/index';
 
 const featured = ref([]);
 const categories = ref([]);
+const brands = ref([]);
 const loading = ref(true);
-
-const brands = ['Philips', 'Osram', 'GE Lighting', 'Cree', 'Eaton', 'Legrand', 'Schneider', 'ABB', 'Lutron', 'Acuity'];
 
 const features = [
   { icon: Award,          title: 'Industry Expertise',   desc: 'Years of experience across construction, manufacturing, and commercial sectors.' },
@@ -193,12 +196,14 @@ const showcaseProducts = computed(() => featured.value.slice(0, 4));
 
 onMounted(async () => {
   try {
-    const [fp, cats] = await Promise.all([
+    const [fp, cats, br] = await Promise.all([
       productsApi.getAll({ featured: true, limit: 8 }),
       categoriesApi.getAll(),
+      brandsApi.getPublic(),
     ]);
     featured.value = fp.data.products;
     categories.value = cats.data;
+    brands.value = br.data;
   } catch {}
   loading.value = false;
 });
@@ -329,12 +334,21 @@ function getCatIcon(name) {
 }
 .ticker-wrap { flex: 1; overflow: hidden; }
 .ticker {
-  display: flex; gap: 2.5rem; white-space: nowrap;
-  animation: ticker-scroll 22s linear infinite;
+  display: flex; align-items: center; gap: 2.5rem; white-space: nowrap;
+  animation: ticker-scroll 28s linear infinite;
 }
-.ticker span {
+.ticker-item {
+  display: inline-flex; align-items: center; gap: 0.5rem; flex-shrink: 0;
+}
+.ticker-logo {
+  height: 22px; max-width: 64px; object-fit: contain;
+  opacity: 0.55; filter: grayscale(1);
+  transition: opacity 0.2s, filter 0.2s;
+}
+.ticker-logo:hover { opacity: 0.9; filter: grayscale(0); }
+.ticker-name {
   font-size: 0.85rem; font-weight: 600; color: var(--text-muted);
-  letter-spacing: 0.05em; flex-shrink: 0;
+  letter-spacing: 0.05em;
 }
 @keyframes ticker-scroll {
   0% { transform: translateX(0); }

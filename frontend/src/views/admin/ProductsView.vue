@@ -32,9 +32,11 @@
             <td>{{ p.category_name || '—' }}</td>
             <td><span :class="p.featured ? 'text-green' : 'text-muted'">{{ p.featured ? '★' : '☆' }}</span></td>
             <td><span class="badge" :class="p.status === 'active' ? 'badge-green' : 'badge-muted'">{{ p.status }}</span></td>
-            <td class="actions-cell">
-              <button class="btn-outline btn-sm" @click="openModal(p)">Edit</button>
-              <button class="btn-danger btn-sm" @click="deleteProduct(p.product_id)">Delete</button>
+            <td>
+              <div class="actions-cell">
+                <button class="btn-outline btn-sm" @click="openModal(p)">Edit</button>
+                <button class="btn-danger btn-sm" @click="deleteProduct(p.product_id)">Delete</button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -42,7 +44,7 @@
     </div>
 
     <!-- Product Modal -->
-    <div v-if="modalOpen" class="modal-overlay" @click.self="modalOpen = false">
+    <div v-if="modalOpen" class="modal-overlay">
       <div class="modal product-modal">
         <button class="modal-close" @click="modalOpen = false">✕</button>
         <h3>{{ editingId ? 'Edit Product' : 'Add Product' }}</h3>
@@ -152,7 +154,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { QuillEditor } from '@vueup/vue-quill';
 import Table from 'quill/modules/table.js';
 import { productsApi, categoriesApi, uploadApi } from '@/api/index';
@@ -299,10 +301,13 @@ async function deleteProduct(id) {
   await loadProducts();
 }
 
+function onKeyDown(e) { if (e.key === 'Escape') modalOpen.value = false; }
 onMounted(async () => {
+  document.addEventListener('keydown', onKeyDown);
   const [, cats] = await Promise.all([loadProducts(), categoriesApi.getAll()]);
   categories.value = cats.data;
 });
+onUnmounted(() => document.removeEventListener('keydown', onKeyDown));
 </script>
 
 <style scoped>
