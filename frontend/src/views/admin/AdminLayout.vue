@@ -65,7 +65,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import {
   Zap, ChevronLeft, ChevronRight, Menu,
   LayoutDashboard, Package, Tag, FileEdit,
-  Building2, Share2, Search, Users, Award,
+  Building2, Share2, Search, Users, Award, Image,
   HelpCircle, Globe, LogOut,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/auth';
@@ -86,6 +86,7 @@ const navItems = [
   { to: '/admin/company',    icon: Building2,        label: 'Company Info' },
   { to: '/admin/social',     icon: Share2,           label: 'Social Links' },
   { to: '/admin/brands',     icon: Award,            label: 'Trusted Brands' },
+  { to: '/admin/hero',       icon: Image,            label: 'Hero Showcase' },
   { to: '/admin/seo',        icon: Search,           label: 'SEO Manager' },
 ];
 
@@ -98,6 +99,7 @@ const titles = {
   'admin-company':    'Company Info',
   'admin-social':     'Social Links',
   'admin-brands':     'Trusted Brands',
+  'admin-hero':       'Hero Showcase',
   'admin-seo':        'SEO Manager',
 };
 const currentTitle = computed(() => titles[route.name] || 'Admin');

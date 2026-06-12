@@ -16,11 +16,18 @@ function normalizeSpecs(value) {
 // GET /api/products — client-facing with optional filters
 router.get('/', async (req, res) => {
   try {
-    const { category, search, featured, page = 1, limit = 12 } = req.query;
+    const { category, search, featured, ids, page = 1, limit = 12 } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     let where = ['p.status = "active"'];
     const params = [];
 
+    if (ids) {
+      const idList = ids.split(',').map(Number).filter(Boolean);
+      if (idList.length) {
+        where.push(`p.product_id IN (${idList.map(() => '?').join(',')})`);
+        params.push(...idList);
+      }
+    }
     if (category) {
       where.push('c.slug = ?');
       params.push(category);

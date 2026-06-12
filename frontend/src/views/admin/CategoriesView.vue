@@ -15,9 +15,11 @@
             <td><code style="font-size:0.8rem;color:var(--text-muted);">{{ c.slug }}</code></td>
             <td>{{ c.product_count }}</td>
             <td class="text-muted" style="font-size:0.85rem;max-width:240px;">{{ c.description || '—' }}</td>
-            <td class="actions-cell">
-              <button class="btn-outline btn-sm" @click="openModal(c)">Edit</button>
-              <button class="btn-danger btn-sm" @click="deleteCategory(c.category_id)">Delete</button>
+            <td>
+              <div class="actions-cell">
+                <button class="btn-outline btn-sm" @click="openModal(c)">Edit</button>
+                <button class="btn-danger btn-sm" @click="deleteCategory(c.category_id)">Delete</button>
+              </div>
             </td>
           </tr>
         </tbody>

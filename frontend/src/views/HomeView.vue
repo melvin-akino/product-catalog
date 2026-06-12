@@ -176,9 +176,10 @@ import {
 import NavBar from '@/components/NavBar.vue';
 import AppFooter from '@/components/AppFooter.vue';
 import ProductCard from '@/components/ProductCard.vue';
-import { productsApi, categoriesApi, brandsApi } from '@/api/index';
+import { productsApi, categoriesApi, brandsApi, contentApi } from '@/api/index';
 
 const featured = ref([]);
+const heroProducts = ref([]);
 const categories = ref([]);
 const brands = ref([]);
 const loading = ref(true);
@@ -192,7 +193,7 @@ const features = [
   { icon: RotateCcw,      title: 'Warranty Support',     desc: 'Backed warranty support on all major brands and product lines.' },
 ];
 
-const showcaseProducts = computed(() => featured.value.slice(0, 4));
+const showcaseProducts = computed(() => heroProducts.value.length ? heroProducts.value : featured.value.slice(0, 4));
 
 onMounted(async () => {
   try {
@@ -204,6 +205,17 @@ onMounted(async () => {
     featured.value = fp.data.products;
     categories.value = cats.data;
     brands.value = br.data;
+
+    // Load admin-pinned hero products
+    try {
+      const { data: hero } = await contentApi.getPage('hero_products');
+      const ids = JSON.parse(hero.content_body || '[]');
+      if (ids.length) {
+        const { data } = await productsApi.getAll({ ids: ids.join(','), limit: 4 });
+        // Preserve the admin-selected order
+        heroProducts.value = ids.map(id => data.products.find(p => p.product_id === id)).filter(Boolean);
+      }
+    } catch {}
   } catch {}
   loading.value = false;
 });
