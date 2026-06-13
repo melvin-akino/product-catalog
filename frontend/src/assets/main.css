@@ -74,6 +74,7 @@ input:focus, textarea:focus, select:focus {
 }
 .btn-primary:hover {
   background: var(--green-secondary);
+  color: #fff;
   box-shadow: var(--shadow-green);
   transform: translateY(-1px);
 }
@@ -229,3 +230,7 @@ tr:hover td { background: var(--bg-card-hover); }
   .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
   .section { padding: 3rem 0; }
 }
+
+/* Quill 2.x bullet list fix - no bullet CSS ships by default */
+.ql-editor ol li[data-list=bullet] { counter-reset: list-1 list-2 list-3 list-4 list-5 list-6 list-7 list-8 list-9 !important; }
+.ql-editor ol li[data-list=bullet]::before { content: '\2022' !important; }

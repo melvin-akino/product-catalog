@@ -9,13 +9,13 @@
         </div>
 
         <div class="contact-options">
-          <a :href="`mailto:${email}?subject=Product Inquiry: ${productName}`" class="contact-option">
+          <button class="contact-option" @click="goToContact">
             <div class="option-icon">✉️</div>
             <div class="option-info">
               <strong>Email Us</strong>
               <span>{{ email }}</span>
             </div>
-          </a>
+          </button>
 
           <a :href="`tel:${phone}`" class="contact-option">
             <div class="option-icon">📞</div>
@@ -44,10 +44,17 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { companyApi } from '@/api/index';
 
-defineProps({ productName: { type: String, default: 'this product' } });
+const props = defineProps({ productName: { type: String, default: 'this product' } });
 const emit = defineEmits(['close']);
+const router = useRouter();
+
+function goToContact() {
+  emit('close');
+  router.push(`/contact?subject=${encodeURIComponent('Inquiry about ' + props.productName)}`);
+}
 
 function onKeyDown(e) { if (e.key === 'Escape') emit('close'); }
 
@@ -80,6 +87,7 @@ const whatsappLink = computed(() => {
   background: var(--bg-secondary);
   color: var(--text-primary); text-decoration: none;
   transition: all 0.2s;
+  cursor: pointer; width: 100%; text-align: left; font: inherit;
 }
 .contact-option:hover { border-color: var(--green-border); background: var(--green-glow); color: var(--text-primary); }
 .option-icon { font-size: 1.5rem; }

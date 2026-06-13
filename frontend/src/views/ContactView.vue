@@ -32,6 +32,10 @@
           <h3>Send an Inquiry</h3>
           <div class="accent-line"></div>
 
+          <div class="bdo-payment-banner">
+            <img src="/bdo-checkout.jpg" alt="BDO Checkout — We accept Mastercard and VISA" />
+          </div>
+
           <div v-if="formSuccess" class="alert alert-success">
             Thank you! Your message has been sent. We'll be in touch shortly.
           </div>
@@ -72,17 +76,19 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import NavBar from '@/components/NavBar.vue';
 import AppFooter from '@/components/AppFooter.vue';
 import api, { contentApi, companyApi } from '@/api/index';
 
+const route = useRoute();
 const content = ref('');
 const company = ref(null);
 const loading = ref(true);
 const formSuccess = ref(false);
 const formError = ref('');
 const submitting = ref(false);
-const form = ref({ name: '', email: '', subject: '', message: '', honeypot: '' });
+const form = ref({ name: '', email: '', subject: route.query.subject || '', message: '', honeypot: '' });
 
 onMounted(async () => {
   try {
@@ -135,6 +141,18 @@ async function submitForm() {
   opacity: 0;
   height: 0;
   overflow: hidden;
+}
+
+.bdo-payment-banner {
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+.bdo-payment-banner img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 @media (max-width: 900px) { .contact-layout { grid-template-columns: 1fr; } }

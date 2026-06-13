@@ -106,7 +106,8 @@ async function loadProducts(p = 1) {
       limit,
       search: filters.value.search,
       category: filters.value.category,
-      featured: filters.value.featured || undefined,
+      featured: filters.value.featured || sortBy.value === 'featured' || undefined,
+      sort: sortBy.value !== 'featured' ? sortBy.value : 'newest',
     });
     products.value = data.products;
     total.value = data.total;

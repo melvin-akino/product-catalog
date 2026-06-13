@@ -13,6 +13,31 @@
     </div>
 
     <div v-if="loading" class="spinner"></div>
+
+    <!-- Home page: custom two-field form -->
+    <div v-else-if="activePage === 'home'" class="editor-wrap">
+      <div class="home-field">
+        <label class="home-label">Hero Heading <span class="home-hint">(HTML — use <code>&lt;span class="text-green"&gt;…&lt;/span&gt;</code> for green text, <code>&lt;br&gt;</code> for line breaks)</span></label>
+        <textarea v-model="homeData.heading" class="home-textarea" rows="6" spellcheck="false" />
+      </div>
+      <div class="home-field" style="margin-top:1.25rem;">
+        <label class="home-label">Hero Description</label>
+        <textarea v-model="homeData.description" class="home-textarea" rows="4" />
+      </div>
+      <div class="home-field" style="margin-top:1.25rem;">
+        <label class="home-label">Heading Preview</label>
+        <div class="home-preview-box">
+          <h1 class="home-preview-h1" v-html="homeData.heading"></h1>
+          <p class="home-preview-p">{{ homeData.description }}</p>
+        </div>
+      </div>
+      <div class="editor-actions">
+        <button class="btn-primary" @click="save" :disabled="saving">{{ saving ? 'Saving…' : 'Save Changes' }}</button>
+        <span v-if="saved" class="alert alert-success" style="padding:0.5rem 1rem;display:inline-flex;">Saved!</span>
+      </div>
+    </div>
+
+    <!-- Other pages: Quill editor -->
     <div v-else class="editor-wrap">
       <QuillEditor
         v-model:content="content"
@@ -52,20 +77,22 @@ import { contentApi } from '@/api/index';
 const toolbar = [
   [{ header: [2, 3, 4, false] }],
   ['bold', 'italic', 'underline'],
-  [{ list: 'ordered' }, { list: 'bullet' }],
+  [{ list: 'bullet' }, { list: 'ordered' }],
   ['link'],
   ['clean'],
 ];
 
 const pages = [
+  { key: 'home', label: 'Home' },
   { key: 'about', label: 'About Us' },
   { key: 'contact', label: 'Contact Us' },
   { key: 'shipping', label: 'Shipping Policy' },
   { key: 'terms', label: 'Terms & Conditions' },
 ];
 
-const activePage = ref('about');
+const activePage = ref('home');
 const content = ref('');
+const homeData = ref({ heading: '', description: '' });
 const loading = ref(false);
 const saving = ref(false);
 const saved = ref(false);
@@ -85,8 +112,14 @@ async function selectPage(key) {
   loading.value = true;
   try {
     const { data } = await contentApi.getPage(key);
-    content.value = data.content_body || '';
-  } catch { content.value = ''; }
+    if (key === 'home') {
+      try { Object.assign(homeData.value, JSON.parse(data.content_body || '{}')); } catch {}
+    } else {
+      content.value = data.content_body || '';
+    }
+  } catch {
+    if (key !== 'home') content.value = '';
+  }
   loading.value = false;
 }
 
@@ -94,14 +127,17 @@ async function save() {
   saving.value = true;
   saved.value = false;
   try {
-    await contentApi.updatePage(activePage.value, { content_body: content.value });
+    const body = activePage.value === 'home'
+      ? JSON.stringify({ heading: homeData.value.heading, description: homeData.value.description })
+      : content.value;
+    await contentApi.updatePage(activePage.value, { content_body: body });
     saved.value = true;
     setTimeout(() => { saved.value = false; }, 2500);
   } catch {}
   saving.value = false;
 }
 
-onMounted(() => selectPage('about'));
+onMounted(() => selectPage('home'));
 </script>
 
 <style scoped>
@@ -158,6 +194,7 @@ onMounted(() => selectPage('about'));
 .content-editor :deep(.ql-editor h3),
 .content-editor :deep(.ql-editor h4) { color: var(--text); }
 .content-editor :deep(.ql-editor a) { color: var(--green-primary); }
+
 .content-editor :deep(.ql-editor table) {
   border-collapse: collapse; width: 100%; margin: 0.5rem 0;
 }
@@ -170,6 +207,26 @@ onMounted(() => selectPage('about'));
   display: flex; align-items: center; gap: 0.5rem;
   margin-top: 0.5rem; flex-wrap: wrap;
 }
+
+/* Home page editor */
+.home-field { display: flex; flex-direction: column; gap: 0.5rem; }
+.home-label { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+.home-hint { font-weight: 400; font-size: 0.78rem; color: var(--text-muted); margin-left: 0.4rem; }
+.home-hint code { background: var(--bg-secondary); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.75rem; color: var(--green-primary); }
+.home-textarea {
+  width: 100%; padding: 0.75rem 1rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-family: 'Courier New', monospace; font-size: 0.85rem;
+  line-height: 1.6; resize: vertical;
+}
+.home-textarea:focus { outline: none; border-color: var(--green-border); }
+.home-preview-box {
+  background: #0a0a0a; border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 2rem;
+}
+.home-preview-h1 { font-size: clamp(1.4rem, 3vw, 2rem); line-height: 1.15; margin-bottom: 1rem; }
+.home-preview-p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7; }
 .table-insert-label { font-size: 0.8rem; color: var(--text-muted); }
 .table-dim-input {
   width: 52px; text-align: center; padding: 0.25rem 0.4rem;

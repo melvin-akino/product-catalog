@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
     const [rows] = await pool.query(
       `SELECT c.*, COUNT(p.product_id) AS product_count
        FROM categories c LEFT JOIN products p ON c.category_id = p.category_id AND p.status = 'active'
-       GROUP BY c.category_id ORDER BY c.name ASC`
+       GROUP BY c.category_id ORDER BY c.display_priority ASC, c.name ASC`
     );
     res.json(rows);
   } catch (err) {
@@ -36,13 +36,13 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { name, description } = req.body;
+    const { name, description, display_priority } = req.body;
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     try {
       const [result] = await pool.query(
-        'INSERT INTO categories (name, description, slug) VALUES (?, ?, ?)',
-        [name, description || null, slug]
+        'INSERT INTO categories (name, description, slug, display_priority) VALUES (?, ?, ?, ?)',
+        [name, description || null, slug, display_priority ?? 999]
       );
       const [rows] = await pool.query('SELECT * FROM categories WHERE category_id = ?', [result.insertId]);
       res.status(201).json(rows[0]);
@@ -54,9 +54,9 @@ router.post(
 );
 
 router.put('/:id', authenticateToken, async (req, res) => {
-  const { name, description } = req.body;
+  const { name, description, display_priority } = req.body;
   try {
-    await pool.query('UPDATE categories SET name=?, description=? WHERE category_id=?', [name, description || null, req.params.id]);
+    await pool.query('UPDATE categories SET name=?, description=?, display_priority=? WHERE category_id=?', [name, description || null, display_priority ?? 999, req.params.id]);
     const [rows] = await pool.query('SELECT * FROM categories WHERE category_id = ?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Category not found' });
     res.json(rows[0]);

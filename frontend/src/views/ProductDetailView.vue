@@ -34,7 +34,7 @@
               💬 Inquire Now
             </button>
             <div class="quick-contacts">
-              <a :href="`mailto:${company?.email}`" class="quick-link">✉ Email</a>
+              <RouterLink :to="`/contact?subject=${encodeURIComponent('Inquiry about ' + (product?.name || ''))}`" class="quick-link">✉ Email Us</RouterLink>
               <a :href="`tel:${company?.phone}`" class="quick-link">📞 Call</a>
             </div>
           </div>
@@ -177,8 +177,30 @@ watch(() => route.params.id, loadProduct);
 .specs-html :deep(h2), .specs-html :deep(h3) { color: var(--text); margin: 0.75rem 0 0.4rem; font-size: 1rem; }
 .specs-html :deep(ul), .specs-html :deep(ol) { padding-left: 1.5rem; margin: 0.4rem 0; }
 .specs-html :deep(li) { margin-bottom: 0.25rem; }
-.specs-html :deep(strong) { color: var(--text); }
+.specs-html :deep(strong) { color: var(--text-primary); }
 .specs-html :deep(p) { margin: 0.35rem 0; }
+
+/* 2-column spec table */
+.specs-html :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+.specs-html :deep(tr) { border-bottom: 1px solid var(--border); }
+.specs-html :deep(tr:last-child) { border-bottom: none; }
+.specs-html :deep(tr:nth-child(even) td:first-child) { background: var(--bg-card-hover); }
+.specs-html :deep(td) { padding: 0.65rem 1rem; vertical-align: middle; font-size: 0.875rem; }
+.specs-html :deep(td:first-child) {
+  width: 38%;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-weight: 600;
+  border-right: 1px solid var(--border);
+}
+.specs-html :deep(td:last-child) { color: var(--text-primary); }
 
 @media (max-width: 900px) { .product-grid { grid-template-columns: 1fr; } }
 </style>

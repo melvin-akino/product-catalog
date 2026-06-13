@@ -56,7 +56,7 @@ router.get('/sitemap/xml', async (req, res) => {
   try {
     const [products] = await pool.query('SELECT slug, updated_at FROM products WHERE status="active"');
     const [categories] = await pool.query('SELECT slug FROM categories');
-    const baseUrl = req.query.baseUrl || 'https://yoursite.com';
+    const baseUrl = req.query.baseUrl || 'https://eonmarketing.ph';
 
     const staticPages = ['', 'catalog', 'about', 'contact', 'shipping', 'terms'];
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;

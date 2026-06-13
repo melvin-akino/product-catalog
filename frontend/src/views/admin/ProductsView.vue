@@ -30,8 +30,16 @@
             </td>
             <td><strong>{{ p.name }}</strong></td>
             <td>{{ p.category_name || '—' }}</td>
-            <td><span :class="p.featured ? 'text-green' : 'text-muted'">{{ p.featured ? '★' : '☆' }}</span></td>
-            <td><span class="badge" :class="p.status === 'active' ? 'badge-green' : 'badge-muted'">{{ p.status }}</span></td>
+            <td>
+              <button class="toggle-btn" :class="p.featured ? 'toggle-on' : 'toggle-off'" @click="toggleFeatured(p)" title="Toggle featured">
+                {{ p.featured ? '★' : '☆' }}
+              </button>
+            </td>
+            <td>
+              <button class="badge status-toggle" :class="p.status === 'active' ? 'badge-green' : 'badge-inactive'" @click="toggleStatus(p)">
+                {{ p.status || 'inactive' }}
+              </button>
+            </td>
             <td>
               <div class="actions-cell">
                 <button class="btn-outline btn-sm" @click="openModal(p)">Edit</button>
@@ -79,11 +87,9 @@
             <textarea v-model="form.description" rows="3" placeholder="Product description…"></textarea>
           </div>
 
-          <!-- ── Image Manager ─────────────────────────── -->
+          <!-- Image Manager -->
           <div class="form-group">
             <label>Product Images</label>
-
-            <!-- Current images -->
             <div v-if="imageList.length" class="image-grid">
               <div v-for="(img, idx) in imageList" :key="idx" class="image-thumb-wrap">
                 <img :src="resolveImage(img)" class="image-thumb" @error="e => e.target.src = '/placeholder.svg'" />
@@ -92,8 +98,6 @@
               </div>
             </div>
             <p v-else class="text-muted" style="font-size:0.85rem;margin-bottom:0.5rem;">No images yet</p>
-
-            <!-- Upload files -->
             <div
               class="upload-zone"
               :class="{ dragging: isDragging }"
@@ -109,34 +113,30 @@
                 <em>(JPG, PNG, WebP — max 5 MB each)</em>
               </span>
             </div>
-
-            <!-- Add by URL -->
             <div class="url-add-row">
               <input v-model="urlInput" placeholder="Or paste an image URL…" @keydown.enter.prevent="addUrl" />
               <button class="btn-outline btn-sm" @click="addUrl" :disabled="!urlInput.trim()">Add URL</button>
             </div>
           </div>
-          <!-- ── / Image Manager ────────────────────────── -->
 
+          <!-- Specifications Table Editor -->
           <div class="form-group">
             <label>Specifications</label>
-            <QuillEditor
-              v-model:content="specsText"
-              content-type="html"
-              :toolbar="specsToolbar"
-              :modules="quillModules"
-              theme="snow"
-              class="specs-editor"
-              @ready="onSpecsReady"
-            />
-            <div class="table-insert-bar">
-              <span class="table-insert-label">Insert table:</span>
-              <input v-model.number="tableRows" type="number" min="1" max="10" class="table-dim-input" />
-              <span class="table-insert-label">×</span>
-              <input v-model.number="tableCols" type="number" min="1" max="10" class="table-dim-input" />
-              <button class="btn-outline btn-sm" @click="insertSpecsTable">Insert Table</button>
+            <div class="spec-editor">
+              <div class="spec-header-row">
+                <span class="spec-col-label">Specification</span>
+                <span class="spec-col-label">Value</span>
+                <span style="width:32px;"></span>
+              </div>
+              <div v-for="(row, idx) in specRows" :key="idx" class="spec-row">
+                <input v-model="row.key" class="spec-input" placeholder="e.g. Wattage" />
+                <input v-model="row.value" class="spec-input" placeholder="e.g. 100W / 150W / 200W" />
+                <button class="spec-del-btn" @click="removeSpecRow(idx)" title="Remove row">✕</button>
+              </div>
+              <button class="btn-outline btn-sm spec-add-btn" @click="addSpecRow">+ Add Row</button>
             </div>
           </div>
+
           <label class="check-label" style="margin-bottom:1.25rem; display:flex; gap:0.5rem; align-items:center; cursor:pointer;">
             <input type="checkbox" v-model="form.featured" style="width:auto;" />
             <span>Mark as Featured</span>
@@ -155,27 +155,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { QuillEditor } from '@vueup/vue-quill';
-import Table from 'quill/modules/table.js';
 import { productsApi, categoriesApi, uploadApi } from '@/api/index';
-
-const specsToolbar = [
-  ['bold', 'italic', 'underline'],
-  [{ list: 'ordered' }, { list: 'bullet' }],
-  [{ header: [2, 3, false] }],
-  ['clean'],
-];
-
-const quillModules = [{ name: 'table', module: Table, options: {} }];
-const specsQuill = ref(null);
-const tableRows = ref(3);
-const tableCols = ref(3);
-
-function onSpecsReady(quill) { specsQuill.value = quill; }
-function insertSpecsTable() {
-  if (!specsQuill.value) return;
-  specsQuill.value.getModule('table').insertTable(tableRows.value, tableCols.value);
-}
 
 const products = ref([]);
 const categories = ref([]);
@@ -187,23 +167,64 @@ const editingId = ref(null);
 const saving = ref(false);
 const saveSuccess = ref(false);
 const saveError = ref('');
-const specsText = ref('');
 
 // Image manager state
-const imageList = ref([]);   // array of URL strings (absolute or /uploads/…)
+const imageList = ref([]);
 const urlInput = ref('');
 const isDragging = ref(false);
 const uploading = ref(false);
 const fileInput = ref(null);
 
+// Spec table editor
+const specRows = ref([{ key: '', value: '' }]);
+
 const form = ref({ name: '', description: '', category_id: '', status: 'active', featured: false });
 
-// ── helpers ──────────────────────────────────────────
+// ── Spec helpers ─────────────────────────────────────────────
+function parseSpecHtml(html) {
+  if (!html?.trim()) return [{ key: '', value: '' }];
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const rows = [];
+    doc.querySelectorAll('tr').forEach(tr => {
+      const tds = tr.querySelectorAll('td, th');
+      if (tds.length === 2) {
+        rows.push({ key: tds[0].textContent.trim(), value: tds[1].textContent.trim() });
+      } else if (tds.length > 2) {
+        // Legacy: all specs packed into one row as consecutive key/value td pairs
+        for (let i = 0; i + 1 < tds.length; i += 2) {
+          rows.push({ key: tds[i].textContent.trim(), value: tds[i + 1].textContent.trim() });
+        }
+      }
+    });
+    return rows.length ? rows : [{ key: '', value: '' }];
+  } catch {
+    return [{ key: '', value: '' }];
+  }
+}
+
+function buildSpecHtml(rows) {
+  const filled = rows.filter(r => r.key.trim() || r.value.trim());
+  if (!filled.length) return null;
+  const trs = filled.map(r =>
+    `<tr><td><strong>${esc(r.key)}</strong></td><td>${esc(r.value)}</td></tr>`
+  ).join('');
+  return `<table><tbody>${trs}</tbody></table>`;
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function addSpecRow() { specRows.value.push({ key: '', value: '' }); }
+function removeSpecRow(idx) {
+  if (specRows.value.length > 1) specRows.value.splice(idx, 1);
+  else specRows.value[0] = { key: '', value: '' };
+}
+
+// ── Image helpers ─────────────────────────────────────────────
 function resolveImage(src) {
   if (!src) return '/placeholder.svg';
-  // Already absolute URL — use as-is
-  if (src.startsWith('http://') || src.startsWith('https://')) return src;
-  // Relative path (e.g. /uploads/file.jpg) — prepend origin
   return src;
 }
 
@@ -231,18 +252,15 @@ async function uploadFiles(files) {
     const { data } = await uploadApi.uploadImages(Array.from(files));
     imageList.value.push(...data.urls);
   } catch (e) {
-    saveError.value = e.response?.data?.error || 'Upload failed. Check file size and format.';
+    saveError.value = e.response?.data?.error || 'Upload failed.';
   }
   uploading.value = false;
 }
 
 function onFilePick(e) { uploadFiles(e.target.files); e.target.value = ''; }
-function onDrop(e) {
-  isDragging.value = false;
-  uploadFiles(e.dataTransfer.files);
-}
+function onDrop(e) { isDragging.value = false; uploadFiles(e.dataTransfer.files); }
 
-// ── data ─────────────────────────────────────────────
+// ── Data ─────────────────────────────────────────────────────
 async function loadProducts() {
   const params = { limit: 50 };
   if (search.value) params.search = search.value;
@@ -261,15 +279,15 @@ function openModal(p = null) {
   isDragging.value = false;
   if (p) {
     editingId.value = p.product_id;
-    form.value = { name: p.name, description: p.description || '', category_id: p.category_id || '', status: p.status, featured: !!p.featured };
+    form.value = { name: p.name, description: p.description || '', category_id: p.category_id || '', status: p.status || 'active', featured: !!p.featured };
     const imgs = typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []);
     imageList.value = Array.isArray(imgs) ? [...imgs] : [];
-    specsText.value = typeof p.specifications === 'string' ? p.specifications : (p.specifications ? JSON.stringify(p.specifications) : '');
+    specRows.value = parseSpecHtml(typeof p.specifications === 'string' ? p.specifications : '');
   } else {
     editingId.value = null;
     form.value = { name: '', description: '', category_id: '', status: 'active', featured: false };
     imageList.value = [];
-    specsText.value = '';
+    specRows.value = [{ key: '', value: '' }];
   }
   modalOpen.value = true;
 }
@@ -277,10 +295,9 @@ function openModal(p = null) {
 async function saveProduct() {
   saveError.value = '';
   if (!form.value.name.trim()) { saveError.value = 'Product name is required.'; return; }
-
   saving.value = true;
   try {
-    const payload = { ...form.value, images: imageList.value, specifications: specsText.value || null };
+    const payload = { ...form.value, images: imageList.value, specifications: buildSpecHtml(specRows.value) };
     if (editingId.value) {
       await productsApi.update(editingId.value, payload);
     } else {
@@ -301,6 +318,31 @@ async function deleteProduct(id) {
   await loadProducts();
 }
 
+// ── Inline toggles ───────────────────────────────────────────
+async function toggleStatus(p) {
+  const newStatus = p.status === 'active' ? 'inactive' : 'active';
+  try {
+    const imgs = typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []);
+    await productsApi.update(p.product_id, {
+      name: p.name, description: p.description, specifications: p.specifications,
+      images: imgs, category_id: p.category_id, featured: p.featured, status: newStatus,
+    });
+    p.status = newStatus;
+  } catch {}
+}
+
+async function toggleFeatured(p) {
+  const newFeatured = !p.featured;
+  try {
+    const imgs = typeof p.images === 'string' ? JSON.parse(p.images || '[]') : (p.images || []);
+    await productsApi.update(p.product_id, {
+      name: p.name, description: p.description, specifications: p.specifications,
+      images: imgs, category_id: p.category_id, featured: newFeatured, status: p.status,
+    });
+    p.featured = newFeatured;
+  } catch {}
+}
+
 function onKeyDown(e) { if (e.key === 'Escape') modalOpen.value = false; }
 onMounted(async () => {
   document.addEventListener('keydown', onKeyDown);
@@ -314,31 +356,48 @@ onUnmounted(() => document.removeEventListener('keydown', onKeyDown));
 .admin-page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
 .filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
 .actions-cell { display: flex; gap: 0.4rem; }
-.badge-muted { background: rgba(102,102,102,0.15); color: var(--text-muted); border: 1px solid var(--border); }
 .product-modal { max-width: 660px; max-height: 90vh; overflow-y: auto; }
 .product-modal h3 { margin-bottom: 0.25rem; }
 .modal-form { margin-top: 0.75rem; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
+/* Inline toggles */
+.toggle-btn {
+  background: none; border: none; font-size: 1.1rem;
+  cursor: pointer; padding: 0.1rem 0.3rem; border-radius: 4px;
+  transition: transform 0.15s;
+}
+.toggle-btn:hover { transform: scale(1.2); }
+.toggle-on { color: var(--green-primary); }
+.toggle-off { color: var(--text-muted); }
+
+.status-toggle {
+  cursor: pointer;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.status-toggle:hover { opacity: 0.8; transform: scale(1.05); }
+.badge-inactive {
+  background: rgba(102,102,102,0.15);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
 /* Image manager */
-.image-grid {
-  display: flex; flex-wrap: wrap; gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-.image-thumb-wrap {
-  position: relative; width: 80px; height: 80px; flex-shrink: 0;
-}
-.image-thumb {
-  width: 100%; height: 100%; object-fit: cover;
-  border-radius: var(--radius); border: 1px solid var(--border);
-}
+.image-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+.image-thumb-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+.image-thumb { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--border); }
 .image-remove {
   position: absolute; top: -6px; right: -6px;
   width: 20px; height: 20px; border-radius: 50%;
   background: #ef5350; color: #fff; font-size: 0.65rem;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; border: 2px solid var(--bg-secondary);
-  line-height: 1;
+  cursor: pointer; border: 2px solid var(--bg-secondary); line-height: 1;
 }
 .image-primary-badge {
   position: absolute; bottom: 2px; left: 2px;
@@ -346,71 +405,61 @@ onUnmounted(() => document.removeEventListener('keydown', onKeyDown));
   background: var(--green-primary); color: #000;
   padding: 1px 4px; border-radius: 3px;
 }
-
 .upload-zone {
-  border: 2px dashed var(--border);
-  border-radius: var(--radius);
-  padding: 1.25rem;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
-  margin-bottom: 0.6rem;
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 1.25rem; text-align: center; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s; margin-bottom: 0.6rem;
 }
-.upload-zone:hover, .upload-zone.dragging {
-  border-color: var(--green-primary);
-  background: var(--green-glow);
-}
-.upload-text {
-  font-size: 0.85rem; color: var(--text-secondary);
-  display: flex; flex-direction: column; gap: 0.25rem; align-items: center;
-}
+.upload-zone:hover, .upload-zone.dragging { border-color: var(--green-primary); background: var(--green-glow); }
+.upload-text { font-size: 0.85rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem; align-items: center; }
 .upload-text strong { color: var(--green-primary); }
 .upload-text em { color: var(--text-muted); font-style: normal; font-size: 0.78rem; }
-
-.url-add-row {
-  display: flex; gap: 0.5rem;
-}
+.url-add-row { display: flex; gap: 0.5rem; }
 .url-add-row input { flex: 1; }
 
-/* Quill specs editor — override default Quill styles to match dark admin theme */
-.specs-editor :deep(.ql-toolbar) {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius) var(--radius) 0 0;
+/* Spec table editor */
+.spec-editor {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
-.specs-editor :deep(.ql-container) {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-top: none;
-  border-radius: 0 0 var(--radius) var(--radius);
-  min-height: 140px;
-  font-family: inherit;
-  font-size: 0.9rem;
-  color: var(--text);
+.spec-header-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 32px;
+  gap: 0;
+  background: var(--bg-secondary);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
 }
-.specs-editor :deep(.ql-editor) { min-height: 120px; }
-.specs-editor :deep(.ql-toolbar .ql-stroke) { stroke: var(--text-secondary); }
-.specs-editor :deep(.ql-toolbar .ql-fill) { fill: var(--text-secondary); }
-.specs-editor :deep(.ql-toolbar .ql-picker) { color: var(--text-secondary); }
-.specs-editor :deep(.ql-toolbar button:hover .ql-stroke),
-.specs-editor :deep(.ql-toolbar button.ql-active .ql-stroke) { stroke: var(--green-primary); }
-.specs-editor :deep(.ql-toolbar button:hover .ql-fill),
-.specs-editor :deep(.ql-toolbar button.ql-active .ql-fill) { fill: var(--green-primary); }
-.specs-editor :deep(.ql-editor table) {
-  border-collapse: collapse; width: 100%; margin: 0.5rem 0;
+.spec-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 32px;
+  gap: 0;
+  border-top: 1px solid var(--border);
 }
-.specs-editor :deep(.ql-editor td) {
-  border: 1px solid var(--border); padding: 0.4rem 0.6rem;
-  min-width: 80px; color: var(--text);
+.spec-input {
+  border: none;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  padding: 0.6rem 0.75rem;
+  width: 100%;
+  transition: background 0.15s;
 }
-
-.table-insert-bar {
-  display: flex; align-items: center; gap: 0.5rem;
-  margin-top: 0.5rem; flex-wrap: wrap;
+.spec-input:last-of-type { border-right: none; }
+.spec-input:focus { background: var(--bg-card-hover); outline: none; box-shadow: none; border-color: transparent; }
+.spec-del-btn {
+  background: transparent; border: none; color: var(--text-muted);
+  font-size: 0.7rem; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: color 0.15s;
 }
-.table-insert-label { font-size: 0.8rem; color: var(--text-muted); }
-.table-dim-input {
-  width: 52px; text-align: center; padding: 0.25rem 0.4rem;
-  font-size: 0.85rem;
-}
+.spec-del-btn:hover { color: #ef5350; }
+.spec-add-btn { margin: 0.6rem; }
 </style>

@@ -32,7 +32,7 @@
       <div class="seo-preview">
         <h4>Search Preview</h4>
         <div class="serp-card">
-          <div class="serp-url">yoursite.com / {{ activePage }}</div>
+          <div class="serp-url">eonmarketing.ph / {{ activePage }}</div>
           <div class="serp-title">{{ form.meta_title || 'Page Title' }}</div>
           <div class="serp-desc">{{ form.meta_description || 'Meta description will appear here…' }}</div>
         </div>

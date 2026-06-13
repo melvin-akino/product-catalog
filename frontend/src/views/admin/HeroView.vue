@@ -4,7 +4,7 @@
       <div>
         <h2>Hero Showcase</h2>
         <p class="text-muted" style="font-size:0.875rem;margin-top:0.25rem;">
-          Select up to 4 products to display in the homepage hero section.
+          Select up to 6 products to display in the homepage hero section (3 × 2 grid).
         </p>
       </div>
       <button class="btn-primary" @click="save" :disabled="saving">
@@ -17,7 +17,7 @@
 
     <div v-if="loading" class="spinner"></div>
     <div v-else class="slots-grid">
-      <div v-for="i in 4" :key="i" class="slot-card">
+      <div v-for="i in 6" :key="i" class="slot-card">
         <div class="slot-header">
           <span class="slot-num">Slot {{ i }}</span>
           <span v-if="selected[i-1]" class="badge badge-green">Selected</span>
@@ -66,9 +66,9 @@ import { Package } from 'lucide-vue-next';
 import { productsApi, contentApi } from '@/api/index';
 
 const allProducts = ref([]);
-const selected = ref([null, null, null, null]);
-const queries = ref(['', '', '', '']);
-const openDrop = ref([false, false, false, false]);
+const selected = ref([null, null, null, null, null, null]);
+const queries = ref(['', '', '', '', '', '']);
+const openDrop = ref([false, false, false, false, false, false]);
 const loading = ref(true);
 const saving = ref(false);
 const saveSuccess = ref(false);
@@ -125,7 +125,7 @@ onMounted(async () => {
       const { data: hero } = await contentApi.getPage('hero_products');
       const ids = JSON.parse(hero.content_body || '[]');
       selected.value = ids.map(id => allProducts.value.find(p => p.product_id === id) || null);
-      while (selected.value.length < 4) selected.value.push(null);
+      while (selected.value.length < 6) selected.value.push(null);
     } catch {}
   } catch {}
   loading.value = false;
@@ -137,7 +137,7 @@ onMounted(async () => {
 
 .slots-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.25rem;
 }
 @media (max-width: 1100px) { .slots-grid { grid-template-columns: repeat(2, 1fr); } }

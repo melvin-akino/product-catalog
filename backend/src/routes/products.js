@@ -16,7 +16,7 @@ function normalizeSpecs(value) {
 // GET /api/products — client-facing with optional filters
 router.get('/', async (req, res) => {
   try {
-    const { category, search, featured, ids, page = 1, limit = 12 } = req.query;
+    const { category, search, featured, ids, sort, page = 1, limit = 12 } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     let where = ['p.status = "active"'];
     const params = [];
@@ -42,11 +42,20 @@ router.get('/', async (req, res) => {
 
     const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
+    const baseOrder =
+      sort === 'name_asc' ? 'p.name ASC' :
+      sort === 'name_desc' ? 'p.name DESC' :
+      'p.created_at DESC';
+    // Always sort by category display_priority first (unless user picks a specific sort)
+    const orderClause = (sort === 'name_asc' || sort === 'name_desc')
+      ? baseOrder
+      : `COALESCE(c.display_priority, 999) ASC, ${baseOrder}`;
+
     const [rows] = await pool.query(
-      `SELECT p.product_id, p.name, p.description, p.specifications, p.images,
-              p.slug, p.featured, c.category_id, c.name AS category_name, c.slug AS category_slug
+      `SELECT p.product_id, p.name, p.brand, p.description, p.specifications, p.images,
+              p.slug, p.featured, p.status, c.category_id, c.name AS category_name, c.slug AS category_slug
        FROM products p LEFT JOIN categories c ON p.category_id = c.category_id
-       ${whereClause} ORDER BY p.created_at DESC LIMIT ? OFFSET ?`,
+       ${whereClause} ORDER BY ${orderClause} LIMIT ? OFFSET ?`,
       [...params, parseInt(limit), offset]
     );
 

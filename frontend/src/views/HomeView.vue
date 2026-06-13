@@ -9,34 +9,13 @@
         <span class="hero-eyebrow">
           <span class="eyebrow-dot"></span> Trusted B2B Supplier
         </span>
-        <h1>
-          Professional <span class="text-green">Event Equipment</span> and<br />
-          LED Lighting<br />Solutions
-        </h1>
-        <p class="hero-sub">
-          Supplying industrial and professional event equipment, LED displays, and
-          lighting solutions for events, offices, schools, commercial buildings, and
-          more — delivering quality, reliability, and lasting performance.
-        </p>
+        <h2 v-html="heroHeading"></h2>
+        <p class="hero-sub">{{ heroDescription }}</p>
         <div class="hero-actions">
           <RouterLink to="/catalog" class="btn-primary btn-lg">Browse Catalog</RouterLink>
           <RouterLink to="/contact" class="btn-ghost btn-lg">Request a Quote</RouterLink>
         </div>
-        <div class="hero-stats">
-          <div class="stat-item">
-            <span class="stat-val">500<span class="text-green">+</span></span>
-            <span class="stat-label">Products</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <span class="stat-val">100<span class="text-green">+</span></span>
-            <span class="stat-label">Brands</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <span class="stat-val">24<span class="text-green">/7</span></span>
-            <span class="stat-label">Support</span>
-          </div>
+        <div class="hero-stats" style="display:none;">
         </div>
       </div>
 
@@ -56,21 +35,22 @@
       </div>
 
       </div><!-- /.hero-container -->
-      <div class="hero-gradient"></div>
-    </section>
 
-    <!-- ── Trust bar ──────────────────────────────────────────── -->
-    <div v-if="brands.length" class="trust-bar">
-      <div class="trust-label">Trusted brands we carry</div>
-      <div class="ticker-wrap">
-        <div class="ticker">
-          <span v-for="(b, i) in [...brands, ...brands]" :key="i" class="ticker-item">
-            <img v-if="b.logo_url" :src="b.logo_url" :alt="b.name" class="ticker-logo" @error="e => e.target.style.display='none'" />
-            <span class="ticker-name">{{ b.name }}</span>
-          </span>
+      <!-- ── Trust bar ──────────────────────────────────────────── -->
+      <div v-if="brands.length" class="trust-bar">
+        <div class="trust-label">Trusted brands we carry</div>
+        <div class="ticker-wrap">
+          <div class="ticker">
+            <span v-for="(b, i) in [...brands, ...brands]" :key="i" class="ticker-item">
+              <img v-if="b.logo_url" :src="b.logo_url" :alt="b.name" class="ticker-logo" @error="e => e.target.style.display='none'" />
+              <span class="ticker-name">{{ b.name }}</span>
+            </span>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div class="hero-gradient"></div>
+    </section>
 
     <!-- ── Categories ─────────────────────────────────────────── -->
     <section class="section">
@@ -181,6 +161,11 @@ import { productsApi, categoriesApi, brandsApi, contentApi } from '@/api/index';
 const featured = ref([]);
 const heroProducts = ref([]);
 const categories = ref([]);
+
+const DEFAULT_HEADING = 'Professional<br><span class="text-green">Event Equipment</span><br>and <span class="text-green">LED Lighting</span><br>Solutions';
+const DEFAULT_DESC = 'Supplying industrial and professional event equipment, LED displays, and lighting solutions for events, offices, schools, commercial buildings, and more — delivering quality, reliability, and lasting performance.';
+const heroHeading = ref(DEFAULT_HEADING);
+const heroDescription = ref(DEFAULT_DESC);
 const brands = ref([]);
 const loading = ref(true);
 
@@ -193,7 +178,7 @@ const features = [
   { icon: RotateCcw,      title: 'Warranty Support',     desc: 'Backed warranty support on all major brands and product lines.' },
 ];
 
-const showcaseProducts = computed(() => heroProducts.value.length ? heroProducts.value : featured.value.slice(0, 4));
+const showcaseProducts = computed(() => heroProducts.value.length ? heroProducts.value : featured.value.slice(0, 6));
 
 onMounted(async () => {
   try {
@@ -211,10 +196,18 @@ onMounted(async () => {
       const { data: hero } = await contentApi.getPage('hero_products');
       const ids = JSON.parse(hero.content_body || '[]');
       if (ids.length) {
-        const { data } = await productsApi.getAll({ ids: ids.join(','), limit: 4 });
+        const { data } = await productsApi.getAll({ ids: ids.join(','), limit: 6 });
         // Preserve the admin-selected order
         heroProducts.value = ids.map(id => data.products.find(p => p.product_id === id)).filter(Boolean);
       }
+    } catch {}
+
+    // Load hero heading & description from admin
+    try {
+      const { data: homeContent } = await contentApi.getPage('home');
+      const parsed = JSON.parse(homeContent.content_body || '{}');
+      if (parsed.heading) heroHeading.value = parsed.heading;
+      if (parsed.description) heroDescription.value = parsed.description;
     } catch {}
   } catch {}
   loading.value = false;
@@ -240,11 +233,11 @@ function getCatIcon(name) {
 .hero {
   min-height: 100vh; padding-top: 68px;
   position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
 }
 .hero-container {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 3rem;
-  min-height: calc(100vh - 68px);
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 3rem; flex: 1;
 }
 .hero-gradient {
   position: absolute; inset: 0; pointer-events: none;
@@ -253,9 +246,9 @@ function getCatIcon(name) {
     radial-gradient(ellipse 40% 40% at 80% 20%, rgba(0,230,118,0.04) 0%, transparent 50%);
 }
 .hero-left {
-  flex: 1; position: relative; z-index: 1;
+  flex: 0 0 auto; position: relative; z-index: 1;
   padding: 4rem 0 4rem 0;
-  max-width: 560px;
+  width: 440px;
 }
 .hero-eyebrow {
   display: inline-flex; align-items: center; gap: 0.5rem;
@@ -272,7 +265,7 @@ function getCatIcon(name) {
 @keyframes pulse {
   0%,100% { opacity: 1; } 50% { opacity: 0.4; }
 }
-.hero-left h1 { margin-bottom: 1.25rem; font-size: clamp(2.2rem, 4.5vw, 3.5rem); }
+.hero-left h2 { margin-bottom: 1.25rem; font-size: clamp(2.2rem, 4.5vw, 3.5rem); }
 .hero-sub {
   font-size: 1rem; color: var(--text-secondary); max-width: 460px;
   margin-bottom: 2.25rem; line-height: 1.75;
@@ -294,9 +287,8 @@ function getCatIcon(name) {
 /* ── Hero right ─────────────────────────────────────────────── */
 .hero-right {
   flex: 1; position: relative; z-index: 1;
-  display: flex; align-items: center; justify-content: center;
-  padding: 4rem 0;
-  max-width: 500px;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 7rem 0 2rem;
 }
 .showcase-glow {
   position: absolute; inset: -40px;
@@ -304,7 +296,7 @@ function getCatIcon(name) {
   pointer-events: none;
 }
 .showcase-grid {
-  display: grid; grid-template-columns: 1fr 1fr;
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
   gap: 0.75rem; width: 100%; position: relative; z-index: 1;
 }
 .showcase-card {
@@ -471,15 +463,19 @@ function getCatIcon(name) {
   .products-skeleton { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 860px) {
-  .hero { min-height: unset; padding: 100px 0 3rem; }
-  .hero-container { flex-direction: column; min-height: unset; }
-  .hero-left { max-width: 100%; padding: 0; text-align: center; }
+  .hero { min-height: unset; padding-top: 68px; display: flex; flex-direction: column; }
+  .hero-container { flex-direction: column; flex: unset; gap: 1.5rem; padding: 1.5rem 0 1rem; }
+  .hero-left { max-width: 100%; width: 100%; padding: 0; text-align: center; }
+  .hero-left h2 { font-size: clamp(1.6rem, 6vw, 2.4rem); margin-bottom: 0.75rem; }
+  .hero-sub { font-size: 0.9rem; margin-bottom: 1.25rem; max-width: 100%; }
+  .hero-actions { justify-content: center; margin-bottom: 0; }
   .hero-eyebrow { justify-content: center; }
-  .hero-actions { justify-content: center; }
   .hero-stats { justify-content: center; }
   .hero-right { max-width: 100%; width: 100%; padding: 0; }
-  .showcase-grid { max-width: 400px; margin: 0 auto; }
+  .showcase-grid { gap: 0.5rem; }
   .cta-inner { flex-direction: column; text-align: center; }
+  .cta-actions { flex-direction: column; width: 100%; }
+  .cta-actions a { width: 100%; text-align: center; justify-content: center; }
 }
 @media (max-width: 640px) {
   .features-grid, .products-skeleton { grid-template-columns: 1fr; }
