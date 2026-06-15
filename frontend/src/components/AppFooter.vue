@@ -28,9 +28,9 @@
           <h4>Products</h4>
           <ul>
             <li><RouterLink to="/catalog">All Products</RouterLink></li>
-            <li><RouterLink to="/catalog?category=equipment">Equipment</RouterLink></li>
-            <li><RouterLink to="/catalog?category=lighting">Lighting</RouterLink></li>
-            <li><RouterLink to="/catalog?category=accessories">Accessories</RouterLink></li>
+            <li v-for="cat in categories" :key="cat.category_id">
+              <RouterLink :to="`/catalog?category=${cat.slug}`">{{ cat.name }}</RouterLink>
+            </li>
           </ul>
         </div>
 
@@ -80,7 +80,7 @@
 import { ref, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import { Zap, MapPin, Phone, Mail } from 'lucide-vue-next';
-import { companyApi, socialApi } from '@/api/index';
+import { companyApi, socialApi, categoriesApi } from '@/api/index';
 
 const SOCIAL_ICONS = {
   facebook:  '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>',
@@ -100,14 +100,16 @@ function socialIconSvg(platform) {
 
 const company = ref(null);
 const socialLinks = ref([]);
+const categories = ref([]);
 const logoSrc = ref('');
 
 onMounted(async () => {
   try {
-    const [c, s] = await Promise.all([companyApi.get(), socialApi.getAll()]);
+    const [c, s, cats] = await Promise.all([companyApi.get(), socialApi.getAll(), categoriesApi.getAll()]);
     company.value = c.data;
     if (c.data?.logo_active) logoSrc.value = c.data.logo_active;
     socialLinks.value = s.data;
+    categories.value = cats.data.slice(0, 4);
   } catch {}
 });
 </script>

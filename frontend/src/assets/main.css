@@ -231,6 +231,18 @@ tr:hover td { background: var(--bg-card-hover); }
   .section { padding: 3rem 0; }
 }
 
-/* Quill 2.x bullet list fix - no bullet CSS ships by default */
-.ql-editor ol li[data-list=bullet] { counter-reset: list-1 list-2 list-3 list-4 list-5 list-6 list-7 list-8 list-9 !important; }
-.ql-editor ol li[data-list=bullet]::before { content: '\2022' !important; }
+/* Quill 2.x bullet list fix — applies in editor AND in public v-html rendered content */
+.ql-editor ol li[data-list=bullet],
+.content-body ol li[data-list=bullet],
+.content-preview ol li[data-list=bullet],
+.specs-html ol li[data-list=bullet] {
+  counter-reset: list-1 list-2 list-3 list-4 list-5 list-6 list-7 list-8 list-9 !important;
+  list-style-type: none !important;
+}
+.ql-editor ol li[data-list=bullet]::before,
+.content-body ol li[data-list=bullet]::before,
+.content-preview ol li[data-list=bullet]::before,
+.specs-html ol li[data-list=bullet]::before {
+  content: '\2022' !important;
+  margin-right: 0.4em;
+}
