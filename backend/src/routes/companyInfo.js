@@ -17,19 +17,19 @@ router.get('/', async (req, res) => {
 });
 
 router.put('/', authenticateToken, async (req, res) => {
-  const { name, address, phone, email, tagline, logo_url, logo_upload, logo_source } = req.body;
+  const { name, address, phone, landline, email, tagline, logo_url, logo_upload, logo_source } = req.body;
   const source = ['url', 'upload'].includes(logo_source) ? logo_source : 'url';
   try {
     const [existing] = await pool.query('SELECT * FROM company_info LIMIT 1');
     if (existing.length) {
       await pool.query(
-        'UPDATE company_info SET name=?, address=?, phone=?, email=?, tagline=?, logo_url=?, logo_upload=?, logo_source=? WHERE company_id=?',
-        [name, address, phone, email, tagline, logo_url || null, logo_upload || null, source, existing[0].company_id]
+        'UPDATE company_info SET name=?, address=?, phone=?, landline=?, email=?, tagline=?, logo_url=?, logo_upload=?, logo_source=? WHERE company_id=?',
+        [name, address, phone, landline || null, email, tagline, logo_url || null, logo_upload || null, source, existing[0].company_id]
       );
     } else {
       await pool.query(
-        'INSERT INTO company_info (name, address, phone, email, tagline, logo_url, logo_upload, logo_source) VALUES (?,?,?,?,?,?,?,?)',
-        [name, address, phone, email, tagline, logo_url || null, logo_upload || null, source]
+        'INSERT INTO company_info (name, address, phone, landline, email, tagline, logo_url, logo_upload, logo_source) VALUES (?,?,?,?,?,?,?,?,?)',
+        [name, address, phone, landline || null, email, tagline, logo_url || null, logo_upload || null, source]
       );
     }
     const [rows] = await pool.query('SELECT * FROM company_info LIMIT 1');

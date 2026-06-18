@@ -9,9 +9,10 @@
       <div class="form-group"><label>Company Name *</label><input v-model="form.name" placeholder="Your company name" /></div>
       <div class="form-group"><label>Tagline</label><input v-model="form.tagline" placeholder="Your tagline or slogan" /></div>
       <div class="form-row">
-        <div class="form-group"><label>Phone</label><input v-model="form.phone" placeholder="+1 (555) 000-0000" /></div>
-        <div class="form-group"><label>Email</label><input v-model="form.email" type="email" placeholder="info@company.com" /></div>
+        <div class="form-group"><label>Mobile / Phone</label><input v-model="form.phone" placeholder="+63 9XX XXX XXXX" /></div>
+        <div class="form-group"><label>Landline</label><input v-model="form.landline" placeholder="(02) XXXX-XXXX" /></div>
       </div>
+      <div class="form-group"><label>Email</label><input v-model="form.email" type="email" placeholder="info@company.com" /></div>
       <div class="form-group"><label>Address</label><textarea v-model="form.address" rows="2" placeholder="Full address"></textarea></div>
 
       <!-- ── Logo Manager ───────────────────────────── -->
@@ -81,7 +82,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { companyApi, uploadApi } from '@/api/index';
 
-const form = ref({ name: '', tagline: '', phone: '', email: '', address: '', logo_url: '', logo_upload: '', logo_source: 'url' });
+const form = ref({ name: '', tagline: '', phone: '', landline: '', email: '', address: '', logo_url: '', logo_upload: '', logo_source: 'url' });
 const loading = ref(true);
 const saving = ref(false);
 const saved = ref(false);
@@ -129,6 +130,7 @@ onMounted(async () => {
       name: data.name || '',
       tagline: data.tagline || '',
       phone: data.phone || '',
+      landline: data.landline || '',
       email: data.email || '',
       address: data.address || '',
       logo_url: data.logo_url || '',

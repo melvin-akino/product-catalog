@@ -25,11 +25,11 @@
             </div>
           </a>
 
-          <a :href="whatsappLink" target="_blank" rel="noopener noreferrer" class="contact-option">
-            <div class="option-icon">💬</div>
+          <a :href="viberLink" target="_blank" rel="noopener noreferrer" class="contact-option">
+            <div class="option-icon">📲</div>
             <div class="option-info">
-              <strong>WhatsApp / Chat</strong>
-              <span>Message us directly</span>
+              <strong>Viber</strong>
+              <span>Message us on Viber</span>
             </div>
           </a>
         </div>
@@ -68,9 +68,9 @@ onUnmounted(() => document.removeEventListener('keydown', onKeyDown));
 
 const email = computed(() => company.value.email || 'info@eonmarketing.com');
 const phone = computed(() => company.value.phone || '+1 (555) 000-0000');
-const whatsappLink = computed(() => {
+const viberLink = computed(() => {
   const num = phone.value.replace(/\D/g, '');
-  return `https://wa.me/${num}`;
+  return `viber://chat?number=%2B${num}`;
 });
 </script>
 

@@ -155,12 +155,33 @@ onMounted(() => selectPage('home'));
 .preview-section h4 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 0.75rem; }
 .content-preview {
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--radius-lg); padding: 2rem;
-  color: var(--text-secondary); line-height: 1.8;
+  border-radius: var(--radius-lg); padding: 1.5rem;
+  color: var(--text-secondary); line-height: 1.55; font-size: 0.9rem;
+  max-width: 800px;
 }
-.content-preview :deep(h1), .content-preview :deep(h2), .content-preview :deep(h3) { color: var(--text-primary); margin-bottom: 0.5rem; margin-top: 1.5rem; }
-.content-preview :deep(p) { margin-bottom: 1rem; }
-.content-preview :deep(ul) { margin-left: 1.5rem; margin-bottom: 1rem; }
+.content-preview :deep(h1),
+.content-preview :deep(h2),
+.content-preview :deep(h3) { color: var(--text-primary); margin-bottom: 0.2rem; margin-top: 0.85rem; }
+.content-preview :deep(p) { margin-bottom: 0.4rem; }
+.content-preview :deep(p:empty) { margin-bottom: 0.15rem; line-height: 0.5; }
+.content-preview :deep(ul),
+.content-preview :deep(ol) { margin-left: 1.1rem; margin-bottom: 0.4rem; }
+.content-preview :deep(li) { margin-bottom: 0.1rem; }
+.content-preview :deep(a) { color: var(--green-primary); text-decoration: underline; }
+.content-preview :deep(strong) { color: var(--text-primary); }
+.content-preview :deep(table) {
+  width: 100%; border-collapse: collapse;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; margin: 0.5rem 0 1.25rem;
+}
+.content-preview :deep(tr) { border-bottom: 1px solid var(--border); }
+.content-preview :deep(tr:last-child) { border-bottom: none; }
+.content-preview :deep(td) { padding: 0.65rem 1rem; font-size: 0.875rem; vertical-align: middle; }
+.content-preview :deep(td:first-child) {
+  width: 38%; background: var(--bg-secondary);
+  color: var(--text-muted); font-weight: 600;
+  border-right: 1px solid var(--border);
+}
 
 /* Quill dark theme overrides */
 .content-editor :deep(.ql-toolbar) {

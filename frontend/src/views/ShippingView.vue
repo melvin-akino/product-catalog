@@ -31,7 +31,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.content-body { max-width: 800px; margin: 0 auto; line-height: 1.8; color: var(--text-secondary); }
-.content-body :deep(h1), .content-body :deep(h2), .content-body :deep(h3) { color: var(--text-primary); margin-bottom: 0.75rem; margin-top: 2rem; }
-.content-body :deep(p) { margin-bottom: 1.25rem; }
+.content-body { max-width: 800px; margin: 0 auto; line-height: 1.55; color: var(--text-secondary); font-size: 0.9rem; }
+.content-body :deep(h1), .content-body :deep(h2), .content-body :deep(h3) { color: var(--text-primary); margin-bottom: 0.2rem; margin-top: 0.85rem; }
+.content-body :deep(p) { margin-bottom: 0.4rem; }
+.content-body :deep(p:empty) { margin-bottom: 0.15rem; line-height: 0.5; }
+.content-body :deep(ul), .content-body :deep(ol) { margin-left: 1.1rem; margin-bottom: 0.4rem; }
+.content-body :deep(li) { margin-bottom: 0.1rem; }
+.content-body :deep(a) { color: var(--green-primary); text-decoration: underline; }
+.content-body :deep(strong) { color: var(--text-primary); }
 </style>

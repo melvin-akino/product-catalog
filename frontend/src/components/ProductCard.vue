@@ -69,8 +69,8 @@ function onImgError(e) { e.target.src = '/placeholder.svg'; }
   position: relative; overflow: hidden;
   aspect-ratio: 4/3; background: var(--bg-secondary);
 }
-.card-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.45s ease; }
-.product-card:hover .card-image { transform: scale(1.06); }
+.card-image { width: 100%; height: 100%; object-fit: contain; padding: 0.5rem; transition: transform 0.45s ease; }
+.product-card:hover .card-image { transform: scale(1.04); }
 
 /* Overlay */
 .card-overlay {

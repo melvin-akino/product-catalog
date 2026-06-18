@@ -6,9 +6,7 @@
     <section class="hero">
       <div class="container hero-container">
       <div class="hero-left">
-        <span class="hero-eyebrow">
-          <span class="eyebrow-dot"></span> Trusted B2B Supplier
-        </span>
+
         <h2 v-html="heroHeading"></h2>
         <p class="hero-sub">{{ heroDescription }}</p>
         <div class="hero-actions">
@@ -288,7 +286,7 @@ function getCatIcon(name) {
 .hero-right {
   flex: 1; position: relative; z-index: 1;
   display: flex; align-items: flex-start; justify-content: center;
-  padding: 7rem 0 2rem;
+  padding: 4rem 0;
 }
 .showcase-glow {
   position: absolute; inset: -40px;

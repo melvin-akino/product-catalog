@@ -19,7 +19,11 @@
             </div>
             <div class="detail-item" v-if="company.phone">
               <span class="detail-icon">📞</span>
-              <div><strong>Phone</strong><a :href="`tel:${company.phone}`">{{ company.phone }}</a></div>
+              <div><strong>Mobile</strong><a :href="`tel:${company.phone}`">{{ company.phone }}</a></div>
+            </div>
+            <div class="detail-item" v-if="company.landline">
+              <span class="detail-icon">☎️</span>
+              <div><strong>Landline</strong><a :href="`tel:${company.landline}`">{{ company.landline }}</a></div>
             </div>
             <div class="detail-item" v-if="company.email">
               <span class="detail-icon">✉️</span>
@@ -125,8 +129,14 @@ async function submitForm() {
 
 <style scoped>
 .contact-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; }
-.content-body { color: var(--text-secondary); line-height: 1.8; margin-bottom: 2rem; }
-.content-body :deep(h1), .content-body :deep(h2) { color: var(--text-primary); margin-bottom: 0.75rem; }
+.content-body { color: var(--text-secondary); line-height: 1.55; margin-bottom: 2rem; font-size: 0.9rem; }
+.content-body :deep(h1), .content-body :deep(h2), .content-body :deep(h3) { color: var(--text-primary); margin-bottom: 0.2rem; margin-top: 0.85rem; }
+.content-body :deep(p) { margin-bottom: 0.4rem; }
+.content-body :deep(p:empty) { margin-bottom: 0.15rem; line-height: 0.5; }
+.content-body :deep(ul), .content-body :deep(ol) { margin-left: 1.1rem; margin-bottom: 0.4rem; }
+.content-body :deep(li) { margin-bottom: 0.1rem; }
+.content-body :deep(a) { color: var(--green-primary); text-decoration: underline; }
+.content-body :deep(strong) { color: var(--text-primary); }
 .company-details { display: flex; flex-direction: column; gap: 1.25rem; }
 .detail-item { display: flex; gap: 1rem; align-items: flex-start; }
 .detail-icon { font-size: 1.25rem; margin-top: 0.1rem; }

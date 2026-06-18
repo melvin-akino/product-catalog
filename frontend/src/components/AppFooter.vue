@@ -57,6 +57,10 @@
               <Phone :size="14" class="contact-icon" />
               <span>{{ company.phone }}</span>
             </li>
+            <li v-if="company?.landline">
+              <Phone :size="14" class="contact-icon" />
+              <span>{{ company.landline }} (Landline)</span>
+            </li>
             <li v-if="company?.email">
               <Mail :size="14" class="contact-icon" />
               <span>{{ company.email }}</span>

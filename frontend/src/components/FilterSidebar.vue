@@ -1,4 +1,5 @@
 <template>
+  <div v-if="mobileOpen" class="filter-backdrop" @click="$emit('close')"></div>
   <aside class="filter-sidebar" :class="{ open: mobileOpen }">
     <div class="filter-header">
       <h3>Filters</h3>
@@ -43,7 +44,10 @@
       </label>
     </div>
 
-    <button class="btn-outline clear-btn" @click="clearFilters">Clear Filters</button>
+    <div class="filter-actions">
+      <button class="btn-primary show-results-btn" @click="$emit('close')">Show Results</button>
+      <button class="btn-outline clear-btn" @click="clearFilters">Clear Filters</button>
+    </div>
   </aside>
 </template>
 
@@ -77,6 +81,7 @@ function emitFilters() {
 function selectCategory(slug) {
   localCategory.value = slug;
   emitFilters();
+  emit('close');
 }
 
 function clearFilters() {
@@ -115,13 +120,29 @@ function clearFilters() {
 .check-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem; color: var(--text-secondary); }
 .check-label input { width: auto; accent-color: var(--green-primary); }
 .clear-btn { margin-top: 0.5rem; width: 100%; justify-content: center; }
+.filter-backdrop { display: none; }
+.filter-actions { display: none; }
+
 @media (max-width: 768px) {
+  .filter-backdrop {
+    display: block;
+    position: fixed; inset: 0; z-index: 799;
+    background: rgba(0, 0, 0, 0.6);
+  }
   .filter-sidebar {
-    position: fixed; inset: 0; z-index: 800;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: min(320px, 85vw);
+    z-index: 800;
     border-radius: 0; overflow-y: auto;
     transform: translateX(-100%); transition: transform 0.3s ease;
   }
   .filter-sidebar.open { transform: translateX(0); }
   .filter-close { display: block; }
+  .filter-actions {
+    display: flex; flex-direction: column; gap: 0.6rem;
+    margin-top: 0.5rem;
+  }
+  .show-results-btn { width: 100%; justify-content: center; }
+  .clear-btn { display: none; }
 }
 </style>
