@@ -100,6 +100,7 @@ const pageNumbers = computed(() => {
 async function loadProducts(p = 1) {
   loading.value = true;
   page.value = p;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   try {
     const { data } = await productsApi.getAll({
       page: p,

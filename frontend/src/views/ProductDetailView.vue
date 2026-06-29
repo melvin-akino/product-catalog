@@ -129,7 +129,7 @@ async function loadProduct() {
     const { data } = await productsApi.getById(route.params.id);
     product.value = data;
     if (data.category_id) {
-      const rel = await productsApi.getAll({ category: data.category_slug, limit: 4 });
+      const rel = await productsApi.getAll({ category: data.category_slug, limit: 5 });
       related.value = rel.data.products.filter(p => p.product_id !== data.product_id).slice(0, 4);
     }
   } catch { product.value = null; }

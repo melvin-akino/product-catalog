@@ -14,10 +14,17 @@
         <li><RouterLink to="/catalog" @click="menuOpen=false" active-class="nav-active">Products</RouterLink></li>
         <li><RouterLink to="/about" @click="menuOpen=false" active-class="nav-active">About</RouterLink></li>
         <li><RouterLink to="/contact" @click="menuOpen=false" active-class="nav-active">Contact</RouterLink></li>
-        <li>
-          <RouterLink to="/catalog" class="btn-cta" active-class="" exact-active-class="" @click="menuOpen=false">
-            View Catalog
-          </RouterLink>
+        <li v-if="socialLinks.length" class="follow-item" :class="{ open: followOpen }">
+          <button class="follow-trigger" @click="followOpen = !followOpen" @blur="onFollowBlur">
+            Follow Us <span class="follow-chevron">▾</span>
+          </button>
+          <ul class="follow-dropdown">
+            <li v-for="link in socialLinks" :key="link.link_id">
+              <a :href="link.url" target="_blank" rel="noopener noreferrer" @click="menuOpen=false; followOpen=false">
+                {{ link.platform }}
+              </a>
+            </li>
+          </ul>
         </li>
       </ul>
 
@@ -35,19 +42,24 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import { Zap, Menu, X } from 'lucide-vue-next';
-import { companyApi } from '@/api/index';
+import { companyApi, socialApi } from '@/api/index';
 
 const isScrolled = ref(false);
 const menuOpen = ref(false);
+const followOpen = ref(false);
 const logoSrc = ref('');
 const companyName = ref('EON Marketing');
+const socialLinks = ref([]);
 
 function onScroll() { isScrolled.value = window.scrollY > 40; }
+function onFollowBlur() { setTimeout(() => { followOpen.value = false; }, 150); }
+
 onMounted(() => {
   window.addEventListener('scroll', onScroll);
-  companyApi.get().then(({ data }) => {
-    if (data.logo_active) logoSrc.value = data.logo_active;
-    if (data.name) companyName.value = data.name;
+  Promise.all([companyApi.get(), socialApi.getAll()]).then(([c, s]) => {
+    if (c.data.logo_active) logoSrc.value = c.data.logo_active;
+    if (c.data.name) companyName.value = c.data.name;
+    socialLinks.value = s.data;
   }).catch(() => {});
 });
 onUnmounted(() => window.removeEventListener('scroll', onScroll));
@@ -104,6 +116,34 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll));
 .nav-right { display: flex; align-items: center; gap: 0.5rem; }
 .hamburger { display: none; background: none; color: var(--text-primary); padding: 0.25rem; }
 
+/* Follow Us dropdown */
+.follow-item { position: relative; }
+.follow-trigger {
+  background: none; color: var(--text-secondary);
+  padding: 0.45rem 0.9rem; border-radius: var(--radius);
+  font-weight: 500; font-size: 0.9rem; cursor: pointer;
+  display: flex; align-items: center; gap: 0.3rem;
+  transition: color 0.2s;
+}
+.follow-trigger:hover { color: var(--text-primary); }
+.follow-chevron { font-size: 0.7rem; transition: transform 0.2s; }
+.follow-item.open .follow-chevron { transform: rotate(180deg); }
+.follow-dropdown {
+  display: none; position: absolute; top: calc(100% + 6px); left: 0;
+  background: rgba(10,10,10,0.98); border: 1px solid var(--border);
+  border-radius: var(--radius); min-width: 160px;
+  backdrop-filter: blur(20px); list-style: none;
+  padding: 0.4rem 0; z-index: 999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.follow-item.open .follow-dropdown { display: block; }
+.follow-dropdown li a {
+  display: block; padding: 0.55rem 1rem;
+  color: var(--text-secondary); font-size: 0.875rem;
+  transition: color 0.15s, background 0.15s;
+}
+.follow-dropdown li a:hover { color: var(--green-primary); background: var(--green-glow); }
+
 @media (max-width: 820px) {
   .hamburger { display: flex; }
   .nav-links {
@@ -117,5 +157,16 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll));
   .nav-links a { display: block; width: 100%; padding: 0.75rem 1rem; border-radius: var(--radius); }
   .nav-links a.nav-active::after { display: none; }
   .logo-img { height: 32px; }
+
+  /* Follow Us — flat list on mobile */
+  .follow-item { width: 100%; }
+  .follow-trigger { width: 100%; padding: 0.75rem 1rem; justify-content: space-between; }
+  .follow-dropdown {
+    display: none; position: static;
+    background: var(--bg-secondary); border: none; border-radius: 0;
+    box-shadow: none; backdrop-filter: none; padding: 0;
+  }
+  .follow-item.open .follow-dropdown { display: block; }
+  .follow-dropdown li a { padding: 0.6rem 1.5rem; }
 }
 </style>

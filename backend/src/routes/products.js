@@ -72,13 +72,22 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/products/:id
+// Accepts either a numeric product_id or a slug string.
+// IMPORTANT: Do NOT combine both with OR on the same value — that can return
+// the wrong row if MySQL resolves the OR against an unexpected index.
 router.get('/:id', async (req, res) => {
   try {
+    const idParam = req.params.id;
+    const isNumeric = /^\d+$/.test(idParam);
     const [rows] = await pool.query(
-      `SELECT p.*, c.name AS category_name, c.slug AS category_slug
-       FROM products p LEFT JOIN categories c ON p.category_id = c.category_id
-       WHERE p.product_id = ? OR p.slug = ?`,
-      [req.params.id, req.params.id]
+      isNumeric
+        ? `SELECT p.*, c.name AS category_name, c.slug AS category_slug
+           FROM products p LEFT JOIN categories c ON p.category_id = c.category_id
+           WHERE p.product_id = ?`
+        : `SELECT p.*, c.name AS category_name, c.slug AS category_slug
+           FROM products p LEFT JOIN categories c ON p.category_id = c.category_id
+           WHERE p.slug = ?`,
+      [idParam]
     );
     if (!rows.length) return res.status(404).json({ error: 'Product not found' });
     res.json(rows[0]);
